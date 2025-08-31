@@ -1,0 +1,6 @@
+[ui]
+layout = "wide"
+
+[server]
+headless = true
+port = 8501
