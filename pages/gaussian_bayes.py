@@ -1,3 +1,6 @@
+from logging import getLogger, DEBUG
+logger = getLogger(__name__)
+logger.setLevel(DEBUG)
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,12 +19,23 @@ mu_likelihood = st.slider("Likelihood Mean (μ_likelihood)", -10.0, 10.0, 2.0, s
 sigma_likelihood = st.slider("Likelihood Standard Deviation (σ_likelihood)", 0.1, 10.0, 1.0, step=0.1)
 
 # 2. compute posterior parameters
-def compute_posterior(mu_prior, sigma_prior, mu_likelihood, sigma_likelihood):
-    var_prior = sigma_prior ** 2
+def compute_posterior(mu_0, sigma_0, mu_likelihood, sigma_likelihood):
+    """Calculate posterior parameters for 1D Gaussian prior and likelihood.
+
+    Args:
+        mu_0 (float): mean of the prior Gaussian
+        sigma_0 (float): standard deviation of the prior Gaussian
+        mu_likelihood (_type_): _description_
+        sigma_likelihood (_type_): _description_
+
+    Returns:
+        mu_posterior (float): mean of the posterior Gaussian
+        sigma_posterior (float): standard deviation of the posterior Gaussian
+    """
     var_likelihood = sigma_likelihood ** 2
     
-    var_posterior = 1 / (1/var_prior + 1/var_likelihood)
-    mu_posterior = var_posterior * (mu_prior/var_prior + mu_likelihood/var_likelihood)
+    var_posterior = 1 / (1.0/sigma_0**2 + 1/var_likelihood)
+    mu_posterior = var_posterior * (mu_0/sigma_0**2 + mu_likelihood/var_likelihood)
     
     sigma_posterior = np.sqrt(var_posterior)
     
@@ -40,19 +54,37 @@ st.table(df)
 
 # 3. plot prior, likelihood, posterior
 st.header("Distributions")
-x = np.linspace(-10, 10, 400)
+x_min, x_max = -10, 10
+x = np.linspace(x_min, x_max, 400)
 prior_pdf = norm.pdf(x, mu_prior, sigma_prior)
 likelihood_pdf = norm.pdf(x, mu_likelihood, sigma_likelihood)
+joint_pdf = prior_pdf * likelihood_pdf
 posterior_pdf = norm.pdf(x, mu_posterior, sigma_posterior)
+# check boxes to show/hide distributions
+show_prior = st.checkbox("Show Prior", value=True)
+show_likelihood = st.checkbox("Show Likelihood", value=False)
+show_joint = st.checkbox("Show Joint Probability", value=False)
+show_posterior = st.checkbox("Show Posterior", value=True)
+show_grid = st.checkbox("Show Grid", value=True)
+
 fig, ax = plt.subplots()
-ax.plot(x, prior_pdf, label="Prior", color='blue')
-ax.plot(x, likelihood_pdf, label="Likelihood", color='green')
-ax.plot(x, posterior_pdf, label="Posterior", color='red')
-ax.fill_between(x, prior_pdf, color='blue', alpha=0.1)
-ax.fill_between(x, likelihood_pdf, color='green', alpha=0.1)
-ax.fill_between(x, posterior_pdf, color='red', alpha=0.1)
+if show_prior:
+    ax.plot(x, prior_pdf, label="Prior", color='blue')
+    ax.fill_between(x, prior_pdf, color='blue', alpha=0.1)
+if show_likelihood:
+    ax.plot(x, likelihood_pdf, label="Likelihood", color='green')
+    ax.fill_between(x, likelihood_pdf, color='green', alpha=0.1)
+if show_joint:
+    ax.plot(x, joint_pdf, label="Joint Probability", color='orange')
+    ax.fill_between(x, joint_pdf, color='orange', alpha=0.1)
+if show_posterior:
+    ax.plot(x, posterior_pdf, label="Posterior", color='red')
+    ax.fill_between(x, posterior_pdf, color='red', alpha=0.1)
+if show_grid:
+    ax.grid(True)
 ax.set_title("Prior, Likelihood, and Posterior Distributions")
 ax.set_xlabel("x")
 ax.set_ylabel("Density")
+ax.set_xlim(x_min, x_max)
 ax.legend()
 st.pyplot(fig)

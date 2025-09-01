@@ -1,4 +1,7 @@
 import streamlit as st
+import logging
+
+logging.getLogger("watchdog").setLevel(logging.WARNING)
 
 st.set_page_config(page_title="Diffusion Animation App", page_icon="🌊")
 
