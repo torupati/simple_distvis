@@ -10,12 +10,12 @@ import pandas as pd
 st.title("Gaussian Prior and Bayesian Updating")
 
 # 1. slider for parameters
-st.header("Set Prior and Likelihood Parameters")
-mu_prior = st.slider("Prior Mean (μ_prior)", -10.0, 10.0, 0.0, step=0.1)
-sigma_prior = st.slider("Prior Standard Deviation (σ_prior)", 0.1, 10.0, 1.0, step=0.1)
+st.header(r"Prior $P_{\theta_0}(x) = \mathcal{N}(x | \mu_0, \sigma^2)$ Parameters")
+mu_prior = st.slider(r"Prior position $\mu_0$", -10.0, 10.0, 0.0, step=0.1)
+sigma_prior = st.slider(r"Prior position confidence $\sigma_0$", 0.1, 10.0, 1.0, step=0.1)
 
-st.header("Set Likelihood Parameters")
-mu_likelihood = st.slider("Likelihood Mean (μ_likelihood)", -10.0, 10.0, 2.0, step=0.1)
+st.header(r"Observation $y$ and Observation Probability $P(y|x)=\mathcal{N}(y|x, \nu^2)$ (Likelihood $L_y(x)$)")
+mu_likelihood = st.slider(r"Observation $Y=y$", -10.0, 10.0, 2.0, step=0.1)
 sigma_likelihood = st.slider("Likelihood Standard Deviation (σ_likelihood)", 0.1, 10.0, 1.0, step=0.1)
 
 # 2. compute posterior parameters
@@ -44,10 +44,25 @@ def compute_posterior(mu_0, sigma_0, mu_likelihood, sigma_likelihood):
 mu_posterior, sigma_posterior = compute_posterior(mu_prior, sigma_prior, mu_likelihood, sigma_likelihood)
 
 table_data = {
-    "Parameter": ["Prior Mean (μ_prior)", "Prior Std Dev (σ_prior)",
-                  "Likelihood Mean (μ_likelihood)", "Likelihood Std Dev (σ_likelihood)",
-                  "Posterior Mean (μ_posterior)", "Posterior Std Dev (σ_posterior)"],
-    "Value": [mu_prior, sigma_prior, mu_likelihood, sigma_likelihood, mu_posterior, sigma_posterior]
+    "Parameter": [
+        "prioir position ",
+        r"prior confidence ($σ_0$ is std dev)",
+        "observation (y)",
+        "Likelihood Std Dev (σ_likelihood)",
+        "Posterior position (μ_posterior)",
+        r"Posterior confidence ($\sigma_1$ is std dev)"
+    ],
+    "Value": [
+        mu_prior, sigma_prior, mu_likelihood, sigma_likelihood, mu_posterior, sigma_posterior
+    ],
+    "Formula": [
+        r"$\mu_0$",
+        r"$\sigma_0$",
+        r"$y$",
+        r"$\nu$",
+        r"$\mu_1 = \frac{\mu_0/\sigma_0^2 + \mu_y/\sigma_y^2}{1/\sigma_0^2 + 1/\sigma_y^2}$",
+        r"$\sigma_1 = \sqrt{\frac{1}{1/\sigma_0^2 + 1/\sigma_y^2}}$"
+    ]
 }
 df = pd.DataFrame(table_data)
 st.table(df)
@@ -61,13 +76,13 @@ likelihood_pdf = norm.pdf(x, mu_likelihood, sigma_likelihood)
 joint_pdf = prior_pdf * likelihood_pdf
 posterior_pdf = norm.pdf(x, mu_posterior, sigma_posterior)
 # check boxes to show/hide distributions
-show_prior = st.checkbox("Show Prior", value=True)
-show_likelihood = st.checkbox("Show Likelihood", value=False)
-show_joint = st.checkbox("Show Joint Probability", value=False)
-show_posterior = st.checkbox("Show Posterior", value=True)
+show_prior = st.checkbox("Prior $P_{\\theta_0}(x)$", value=True)
+show_likelihood = st.checkbox("Likelihood $L_y(x)=P(y|x)$", value=False)
+show_joint = st.checkbox("Joint $P_\\theta(x)P(y|x)$", value=False)
+show_posterior = st.checkbox("Posterior $P_{\\theta_1}(x|y)$", value=True)
 show_grid = st.checkbox("Show Grid", value=True)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(16, 6))
 if show_prior:
     ax.plot(x, prior_pdf, label="Prior", color='blue')
     ax.fill_between(x, prior_pdf, color='blue', alpha=0.1)
@@ -88,3 +103,15 @@ ax.set_ylabel("Density")
 ax.set_xlim(x_min, x_max)
 ax.legend()
 st.pyplot(fig)
+
+st.markdown(r"""
+**Posterior formulas:**
+
+$$
+\mu_1 = \frac{\mu_0/\sigma_0^2 + \mu_y/\sigma_y^2}{1/\sigma_0^2 + 1/\sigma_y^2}
+$$
+
+$$
+\sigma_1 = \sqrt{\frac{1}{1/\sigma_0^2 + 1/\sigma_y^2}}
+$$
+""")
