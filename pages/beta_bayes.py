@@ -1,3 +1,7 @@
+"""
+A Streamlit app to visualize Bayesian updating with a Beta prior and Bernoulli likelihood.
+Users can adjust the parameters of the Beta prior and the number of successes/failures in the Bernoulli trials.
+"""
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt

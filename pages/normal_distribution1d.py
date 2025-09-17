@@ -65,16 +65,24 @@ def plot_normal_1d_double(mu, sigma2):
     ax.axvline(mu, color='black', linestyle='dotted')
 
     pdf_double = normal_pdf(x, 2*mu, 4*sigma2)
-
     ax.plot(x, pdf_double, label=r"$P(X_1+X_2=x)$", color='green')
     ax.fill_between(x, pdf_double, color='green', alpha=0.1)
     #ax.axvline(mu*2 + np.sqrt(4*sigma2), color='green', linestyle='-', linewidth=0.8)
     #ax.axvline(mu*2 - np.sqrt(4*sigma2), color='green', linestyle='-', linewidth=0.8)
     ax.axvline(2*mu, color='red', linestyle='--')
+
+    pdf_cancel = normal_pdf(x, mu-mu, 4*sigma2)
+    ax.plot(x, pdf_cancel, label=r"$P(X_1-X_2=x)$", color='green')
+    ax.fill_between(x, pdf_cancel, color='blue', alpha=0.1)
+    #ax.axvline(mu*2 + np.sqrt(4*sigma2), color='green', linestyle='-', linewidth=0.8)
+    #ax.axvline(mu*2 - np.sqrt(4*sigma2), color='green', linestyle='-', linewidth=0.8)
+    ax.axvline(mu-mu, color='red', linestyle='--')
+
     ymax = ax.get_ylim()[1]
     ax.fill_betweenx([0, ymax], x1=2*mu - 2*np.sqrt(sigma2),
                      x2=2*mu + 2*np.sqrt(sigma2), color='cyan', alpha=0.1)
     ax.set_ylim(0, ymax)
+
     #ax.set_title("1D Gaussian Distribution")
     ax.set_xlabel(r"$x$")
     ax.set_ylabel("Probability Density")
@@ -96,7 +104,7 @@ def plot_normal_1d_average_of_tow(mu, sigma2):
     fig, ax = plt.subplots(figsize=(8, 4))
     x = np.linspace(mu - 8 * np.sqrt(sigma2), mu + 8 * np.sqrt(sigma2), 400)
     pdf = normal_pdf(x, mu, sigma2)
-    ax.plot(x, pdf, label=r"P(X=x)$", color='gray')
+    ax.plot(x, pdf, label=r"$P(X=x)$", color='gray')
 
     pdf_double = normal_pdf(x, 2*mu, 4*sigma2)
     ax.plot(x, pdf_double, label=r"$P(X_1+X_2=x)$", color='green')
