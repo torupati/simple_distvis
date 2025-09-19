@@ -12,15 +12,24 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
+st.set_page_config(layout="wide")
 
 st.title("2D Scatter Plot from CSV")
 
 uploaded_file = st.file_uploader("Upload CSV file", type=["csv", "txt"])
 
 if uploaded_file is not None:
-    data = np.loadtxt(uploaded_file, delimiter=",", comments="#")
-    st.write("Shape of data:", data.shape)
-    
+    try:
+        data = np.loadtxt(uploaded_file, delimiter=",", comments="#")
+        st.write("Shape of data:", data.shape)
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+        data = None
+else:
+    data = None
+
+if data is not None:
+    # 2D Scatter plot of first two columns
     fig, ax = plt.subplots()
     ax.scatter(data[:, 0], data[:, 1], alpha=0.7, label="Data")
     ax.set_xlabel("Column 1")

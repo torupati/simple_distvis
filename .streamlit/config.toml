@@ -1,5 +1,5 @@
-[ui]
-layout = "wide"
+#[ui]
+#layout = "wide"
 
 [server]
 headless = true
