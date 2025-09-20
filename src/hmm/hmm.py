@@ -52,7 +52,7 @@ class HMM:
 
     @property
     def M(self) -> int:
-        """Number of hidden states
+        """Number of hidden states. read-only.
 
         Returns:
             int: number of hidden states
@@ -61,7 +61,7 @@ class HMM:
 
     @property
     def D(self) -> int:
-        """Number of category or dimension of observation
+        """Number of category or dimension of observation. read-only.
 
         Returns:
             int: dimension of observation
@@ -393,6 +393,28 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit:int = 100) -> dict:
         prev_likelihood = total_likelihood
         itr_count += 1
     return ll_history
+
+
+def pickle_hmm_and_data_by_dict(out_file:str, hmm:HMM, x:np.ndarray, st:np.ndarray):
+    """Save HMM model and data to pickle file.
+    Args:
+        out_file (str): output file name
+        hmm (HMM): HMM model
+        x (np.ndarray): observation sequence
+        st (np.ndarray): latent state sequence
+    """
+    hmm_param_dict = {
+        'init_state': hmm.init_state,
+        'state_tran': hmm.state_tran,
+        'obs_prob': hmm.obs_prob,
+        'n_state': hmm.M,
+        'n_obs': hmm.D,
+    }
+    with open(out_file, 'wb') as f:
+        pickle.dump({'model_param': hmm_param_dict,
+                    'sample': x,
+                    'latent': st,
+                    'model_type': 'HMM'}, f)
 
 
 def print_state_obs(x, st):

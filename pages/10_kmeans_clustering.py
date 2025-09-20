@@ -18,6 +18,8 @@ st.title("2D Scatter Plot from CSV")
 
 uploaded_file = st.file_uploader("Upload CSV file", type=["csv", "txt"])
 
+data = None
+
 if uploaded_file is not None:
     try:
         data = np.loadtxt(uploaded_file, delimiter=",", comments="#")
@@ -25,8 +27,6 @@ if uploaded_file is not None:
     except Exception as e:
         st.error(f"Error loading file: {e}")
         data = None
-else:
-    data = None
 
 if data is not None:
     # 2D Scatter plot of first two columns
@@ -83,8 +83,16 @@ if data is not None:
     st.subheader("K-means Clustering (in-house implementation)")
     if st.button("Run K-means Clustering (in-house)"):
         from src.hmm.kmeans import kmeans_clustering
+        from src.hmm.kmeans_plot import plot_data_with_centroid
+        data = data[:, [0, 1]]
         mu_init = np.random.randn(n_clusters, data.shape[1])  # Random initialization
         kmeansparam, cost_history = kmeans_clustering(data, mu_init) 
         print(kmeansparam)
+        _r = kmeansparam.get_alignment(x=data)
+        mu = kmeansparam.Mu
+        fig3, ax3 = plt.subplots(1, 1, figsize=(6,6))
+        plot_data_with_centroid(ax3, data, _r, mu)
+        ax3.set_title(f"K-means Clustering In-house (k={n_clusters})")
+        st.pyplot(fig3)
 
 

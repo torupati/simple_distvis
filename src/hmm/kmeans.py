@@ -1,11 +1,11 @@
-"""
-K-means clustering Implementation
-"""
-import logging
+# K-means clustering in-house implementation.
+# coding by Python and Numpy.
 
+import logging
+from pathlib import Path
 import numpy as np
-from tqdm import tqdm
-from tqdm.contrib.logging import logging_redirect_tqdm
+
+from src.hmm.kmeans_plot import plot_data_with_centroid
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -33,8 +33,19 @@ class InputSampleError(KmeansException):
         )
 
 class KmeansCluster():
-    """class
-    Definition of clusters for K-means altorithm
+    """
+    Definition of K-means clustering model.
+    Note that number of clusters is fixed after instance creation.
+    Distance metric can be selected from linear scale, log scale and
+    KL divergence.
+    Covariance can be set to none, diag or full. If covariance is none,
+    only mean vectors are updated.
+    Training variables can be set to outside or inside. If inside is
+    selected, training variables are created inside the instance and
+    updated by PushSample() method. If outside is selected, training
+    variables are not created and PushSample() method is not available.
+    In this case, get_alignment() method is used to get sample alignment
+    to clusters.
     """
     COV_NONE = 0
     COV_FULL = 1
@@ -261,6 +272,15 @@ class KmeansCluster():
             self._X2 = np.zeros([self._K, self._D])
 
     def UpdateParameters(self) -> (float, list):
+        """Update model parameters from inside training variables.
+        Note that this method does not clear training variables.
+
+        Raises:
+            Exception: Invalid training setting
+
+        Returns:
+            _type_: _description_
+        """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
             raise Exception('train mode is not TRAIN_VAR_INSIDE.')
         for k in range(self._K):
@@ -276,6 +296,10 @@ class KmeansCluster():
 
     @property
     def loss(self) -> float:
+        """total loss in current training variables
+        Returns:
+            float: total loss
+        """
         return self._loss
 
     @staticmethod
@@ -289,14 +313,13 @@ class KmeansCluster():
             input vectors must be non negative.
 
         Returns:
-            float: _description_
+            float: KL divergence (not in log scale)
         """
         _x = x / np.sum(x)
         _y = y / np.sum(y)
         xy_diff = np.log(_x) - np.log(_y)
         _kl_div = np.sum(_x * xy_diff)
         return _kl_div
-
 
 def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     """Run k-means clustering.
@@ -305,6 +328,11 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
         X (np.ndarray): vector samples (N, D)
         mu_init (np.ndarray): initial mean vectors(K, D)
         max_it (int, optional): Iteration steps. Defaults to 20.
+        
+        kwargs:
+            dist_mode (str): distance mode. "linear"(default), "log", "kldiv"
+            plot_ckpt (bool): if True, plot intermediate result at each iteration step
+            max_it (int): maximum iteration steps. Default 20.
 
     Returns:
         _type_: _description_
@@ -324,26 +352,75 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     kmeansparam.Mu = mu_init
     cost_history = []
     align_history = []
-    with logging_redirect_tqdm(loggers=[logger]):
-        pbar = tqdm(range(max_it), desc="kmeans", postfix="postfix", ncols=80)
-        for it in pbar:
-            for n in range(N):
-                _, _ = kmeansparam.PushSample(X[n, :])
-            loss, align_dist = kmeansparam.UpdateParameters()
-            kmeansparam.ClearTrainigVariables()
-            #logger.info("iteration %d loss %f", it, loss/N)
-            pbar.write(f"iteration {it} loss {loss/N}")
-            cost_history.append(loss)
-            align_history.append(align_dist)
-            # Convergence validation
-            if len(cost_history) > 1:
-                cost_diff = cost_history[-2] - cost_history[-1]
-                align_diff = [x - y for x, y in
-                              zip(align_history[-1], align_history[-2])]
-                assert cost_diff >= 0.0
-                if 0.0 <= cost_diff < 1.0E-6 and np.sum(align_diff) < 1.0E-6:
-                    logger.debug('iteration step=%d cost_diff = %f'
-                                + 'alignment change=%s',
-                                it, cost_diff, align_diff)
-                    break
+    for it in range(max_it):
+        kmeansparam.ClearTrainigVariables()
+
+        # Push all samples (align samples to clusters)
+        for n in range(N):
+            _, _ = kmeansparam.PushSample(X[n, :])
+
+        # Update parameters(centroids)
+        loss, align_dist = kmeansparam.UpdateParameters()
+
+        logger.info("iteration %d loss %f", it, loss/N)
+        cost_history.append(loss)
+        align_history.append(align_dist)
+
+        # Convergence validation
+        if len(cost_history) > 1:
+            cost_diff = cost_history[-2] - cost_history[-1]
+            align_diff = [x - y for x, y in
+                          zip(align_history[-1], align_history[-2])]
+            assert cost_diff >= 0.0
+            logger.debug('iteration step=%d cost_diff = %f'
+                            + 'alignment change=%s',
+                            it, cost_diff, align_diff)
+            if 0.0 <= cost_diff < 1.0E-6 and np.sum(align_diff) < 1.0E-6:
+                logger.info('converged at iteration %d, alignment not changed', it)
+                break
+        if kwargs.get('plot_ckpt', False):
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+            r = kmeansparam.get_alignment(X)
+            plot_data_with_centroid(ax=ax, x=X, r=r, mu=kmeansparam.Mu, kmeans_param_ref={})
+            fig.suptitle('K-means iteration {it} loss={loss:.2f}'.format(it=it, loss=loss/N))
+            fig.savefig(f'kmeans_iter{it:03d}.png')
+            plt.close(fig)
+
     return kmeansparam, cost_history
+
+def pickle_kmeans_and_data_by_dict(out_file: Path, kmeans_param: KmeansCluster, X: np.ndarray):
+    """
+    Serializes and saves KMeans clustering parameters and data to a file.
+
+    Args:
+        out_file (Path): The path to the output file where the serialized data will be saved.
+        kmeans_param (KmeansCluster): An object containing the parameters of the KMeans clustering model.
+            Attributes of `kmeans_param` used:
+                - Mu: The cluster centroids.
+                - Sigma: The cluster covariances.
+                - Pi: The cluster weights.
+                - covariance_mode: The type of covariance used in the model.
+                - train_vars_mode: The training variables mode.
+                - DistanceType: The distance metric used.
+        X (np.ndarray): The data samples to be saved along with the model parameters.
+
+    Returns:
+        None: This function does not return a value. It writes the serialized data to the specified file.
+
+    Raises:
+        IOError: If there is an issue writing to the specified file.
+    """
+    import pickle
+    kmeans_param_dict = {
+        'Mu': kmeans_param.Mu,
+        'Sigma': kmeans_param.Sigma,
+        'Pi': kmeans_param.Pi,
+        'covariance_type': kmeans_param.covariance_mode,
+        'trainvars': kmeans_param.train_vars_mode,
+        'dist_mode': kmeans_param.DistanceType
+    }
+    with open(out_file, 'wb') as f:
+        pickle.dump({'model_param': kmeans_param_dict,
+                    'sample': X,
+                    'model_type': 'KmeansClustering'}, f)

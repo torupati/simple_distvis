@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 from numpy import ndarray, random
 from numpy import load, array, dot, sum
+from study_gmm.kmeans_plot import plot_data_with_centroid
 from scipy.stats import multivariate_normal
 
 from tqdm import tqdm
@@ -28,6 +29,8 @@ class GaussianMixtureModel():
             M (int): number of mixtures
             D (int): dimension of smaples
         """
+        if M < 1 or D < 1:
+            raise ValueError("M and D must be > 0")
         self._M = M
         self._D = D
         self.Mu = np.random.randn(M, D)
@@ -38,7 +41,7 @@ class GaussianMixtureModel():
 
     @property
     def M(self) -> int:
-        """Number of Gaussians
+        """Number of Gaussians. Read-only.
 
         Returns:
             int: number of Gaussians
@@ -47,7 +50,7 @@ class GaussianMixtureModel():
 
     @property
     def D(self) -> int:
-        """Dimension of input data
+        """Dimension of input data. Read-only.
 
         Returns:
             int: dimension of input data
@@ -164,7 +167,7 @@ class GaussianMixtureModel():
         #self.Sigma = np.zeros((self._M, self._D, self._D))
 
 
-def train_gmm(gmm:GaussianMixtureModel, X:np.ndarray, max_it:int =12):
+def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int =12, **kwargs):
     """Train GMM
 
     Args:
@@ -181,17 +184,23 @@ def train_gmm(gmm:GaussianMixtureModel, X:np.ndarray, max_it:int =12):
         pbar = tqdm(range(max_it), desc=f"gmm-train(M={gmm.M})", postfix="postfix", ncols=80)
         for it in pbar:
     #for it in range(0, max_it):
-        #_ll = gmm.log_likelihood(X)
+    #        _ll = gmm.log_likelihood(X)
             _gamma, _ll = gmm.update_e_step(X)
             loglikelihood_history.append(_ll)
             gmm.update_m_step(X, _gamma)
-            pbar.write('GMM EM training: step={_i} E[log(P(X)]={_l}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+            #pbar.write('GMM EM training: step={_i} E[log(P(X)]={_l}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+            logger.info('GMM EM training: step={_i} E[log(P(X)]={_l}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+            if kwargs.get("plot_ckpt", False) and gmm.D >= 2:
+                import matplotlib.pyplot as plt
+                fig, ax = plt.subplots(1,1, figsize=(6,6))
+                plot_data_with_centroid(ax, X, _gamma, gmm.Mu)
+                out_pngfile = "gmm-step{it:03d}.png".format(it=len(loglikelihood_history))
+                fig.suptitle('GMM EM training: step={_i} E[log(P(X)]={_l:.2f}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+                fig.savefig(out_pngfile)
+                logger.info('save PNG file: %s', out_pngfile)
     return gmm, loglikelihood_history
 
-
-
-
-def load_from_file(input_file:str):
+def load_from_pickle_file(input_file:str):
     with open(input_file, 'rb') as f:
         indata = pickle.load(f)
         #print(indata)
@@ -199,10 +208,8 @@ def load_from_file(input_file:str):
     Param = indata['model_param'] # model parameters.
     return X, Param
 
-def mixutre_number_test(X, Param, max_mixnum:int = 10):
+def gmm_em_training_mixutre_scan(X, max_mixnum:int = 10):
     N, D = X.shape[0], X.shape[1]
-    K = Param.K
-    Pi, Mu, Sigma = Param.Pi, Param.Mu, Param.Sigma
 
     mixnum_likelihood = {}
     L = np.linalg.cholesky(np.cov(X.T))
@@ -215,10 +222,7 @@ def mixutre_number_test(X, Param, max_mixnum:int = 10):
             gmm.Mu[m, :] = X.mean() + np.dot(L, np.random.randn(D))
             gmm.Sigma[m, :, :] = np.eye(D)
         gmm, loglikelihood_history = train_gmm(gmm, X, max_it=100)
-        print('GMM EM training: mixture={i} E[log(P(X)]={_l}'.format(i=mix_num, _l=loglikelihood_history[-1]))
+        logger.info('GMM EM training: mixture={i} E[log(P(X)]={_l}'.format(i=mix_num, _l=loglikelihood_history[-1]/N))
         mixnum_likelihood[mix_num] = loglikelihood_history[-1]
     print(mixnum_likelihood)
-
-
-
-
+    return mixnum_likelihood
