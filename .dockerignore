@@ -32,3 +32,7 @@ htmlcov/
 
 # Ignore Streamlit secrets (if any)
 .streamlit/secrets.toml
+
+cloudbuild.yaml
+docker/
+README.md
