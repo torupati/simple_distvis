@@ -60,8 +60,8 @@ table_data = {
         r"$\sigma_0$",
         r"$y$",
         r"$\nu$",
-        r"$\mu_1 = \frac{\mu_0/\sigma_0^2 + \mu_y/\sigma_y^2}{1/\sigma_0^2 + 1/\sigma_y^2}$",
-        r"$\sigma_1 = \sqrt{\frac{1}{1/\sigma_0^2 + 1/\sigma_y^2}}$"
+        r"$\mu_1$",
+        r"$\sigma_1$"
     ]
 }
 df = pd.DataFrame(table_data)
