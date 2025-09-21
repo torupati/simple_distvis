@@ -1,0 +1,18 @@
+# cloudbuild.yaml
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-f', 'docker/Dockerfile',
+      '-t', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app',
+      '.'
+    ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push',
+      'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app'
+    ]
+
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app'

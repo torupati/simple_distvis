@@ -67,6 +67,7 @@ gcloud projects add-iam-policy-binding [YOU_PROJECT_ID] \
 gcloud builds submit --tag asia-northeast1-docker.pkg.dev/[YOUR_PROJECT_ID]/my-repo/streamlit-app
 ```
 
+
 - Deploy
 
 ```shell
@@ -75,4 +76,10 @@ gcloud run deploy streamlit-app \
   --platform managed \
   --port 8501 \
   --allow-unauthenticated
+```
+
+- Build and deployment process are written in cloudbuild script.
+
+```shell
+gcloud builds submit --config cloudbuild.yaml
 ```
