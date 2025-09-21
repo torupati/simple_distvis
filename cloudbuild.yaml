@@ -1,5 +1,8 @@
 # cloudbuild.yaml
 
+options:
+  logging: CLOUD_LOGGING_ONLY # Change to CLOUD_LOGGING_ONLY if you want to avoid storing logs in GCS.
+
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: [
