@@ -27,6 +27,11 @@ I am using WSL2, Ubuntu 24.02 and following messages are shown in terminal.
 >  Local URL: http://localhost:8501
 >  Network URL: http://172.29.73.34:8501
 
+## Usage
+
+```
+PYTHONPATH=. uv run tools/sample_generator.py --help
+```
 
 ## Memo to Deploy to Google Cloud Platform
 

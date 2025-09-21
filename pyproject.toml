@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
+packages = [ {include = "src", from = "."} ]
 dependencies = [
     "matplotlib>=3.10.6",
     "numpy>=2.3.2",

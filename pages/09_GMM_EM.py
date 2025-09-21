@@ -1,6 +1,5 @@
-from src.hmm import foo
+
 import pickle
-import argparse
 
 import numpy as np
 
