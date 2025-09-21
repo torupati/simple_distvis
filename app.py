@@ -9,6 +9,9 @@ st.title("Welcome to the Diffusion Animation App")
 st.write(
     """
     Use the sidebar to select a page.
-    - **Diffusion Animation**: See a 1D diffusion process animated.
+    - **Gaussian 1D Posterior**: Explore Bayesian updating with Gaussian priors and likelihoods.
+    - **Gaussian Mixture Model (GMM)**: Explore GMMs and their applications.
+    - **K-Means Clustering**: Perform K-Means clustering on your data and visualize the results.
+    - **Bias and Variance**: bias-variance tradeoff visualization.
     """
 )

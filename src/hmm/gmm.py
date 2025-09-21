@@ -3,9 +3,9 @@
 
 import numpy as np
 import pickle
-from numpy import ndarray, random
-from numpy import load, array, dot, sum
-from hmm.kmeans_plot import plot_data_with_centroid
+from numpy import ndarray
+from numpy import array, dot, sum
+from src.hmm.kmeans_plot import plot_data_with_centroid
 from scipy.stats import multivariate_normal
 
 from tqdm import tqdm
@@ -225,3 +225,15 @@ def gmm_em_training_mixutre_scan(X, max_mixnum:int = 10):
         mixnum_likelihood[mix_num] = loglikelihood_history[-1]
     print(mixnum_likelihood)
     return mixnum_likelihood
+
+# ---
+import matplotlib.pyplot as plt
+
+def plot_loglikelihood_history(ax, loglikelihood_history):
+    ax.plot(range(0, len(loglikelihood_history)), loglikelihood_history, color='k', linestyle='-', marker='o')
+    ax.set_xlim([0,len(loglikelihood_history)])
+    ax.set_ylabel("log liklihood")
+    ax.set_xlabel("iteration step")
+    #plt.ylim([40, 80])
+    ax.grid(True)
+    return ax

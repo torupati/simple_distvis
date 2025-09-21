@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 import pandas as pd
-
+st.set_page_config(layout="wide")
 st.title("Gaussian Prior and Bayesian Updating")
 
 # 1. slider for parameters
