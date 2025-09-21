@@ -1,12 +1,11 @@
-"""
-EM algorithm implementation to train Gaussian Mixture Models.
-"""
+# EM algorithm implementation to train Gaussian Mixture Models.
+# Reference: "Pattern Recognition and Machine Learning" by C. M. Bishop, Chapter 9
 
 import numpy as np
 import pickle
 from numpy import ndarray, random
 from numpy import load, array, dot, sum
-from study_gmm.kmeans_plot import plot_data_with_centroid
+from hmm.kmeans_plot import plot_data_with_centroid
 from scipy.stats import multivariate_normal
 
 from tqdm import tqdm

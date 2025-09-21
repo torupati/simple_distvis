@@ -1,5 +1,5 @@
-"""Hidden Markov Models implementaton for learning purpose
-"""
+# Hidden Markov Models implementaton for learning purpose
+# Reference: "Pattern Recognition and Machine Learning" by C. M. Bishop, Chapter 13
 
 import numpy as np
 from numpy import zeros, log, array
@@ -9,7 +9,7 @@ import json
 import pickle
 from os import path, makedirs
 
-eps = 1.0E-128
+eps = 1.0E-128 # to avoid log(0)
 
 class HMM:
     """
