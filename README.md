@@ -80,6 +80,37 @@ gcloud run deploy streamlit-app \
 
 - Build and deployment process are written in cloudbuild script.
 
+
+
+### Cloudbuild
+
+- https://cloud.google.com/build/docs/securing-builds/configure-user-specified-service-accounts?hl=ja
+
+- Create a service account for cloudbuild.
+
 ```shell
-gcloud builds submit --config cloudbuild.yaml
+gcloud iam service-accounts create cloud-build-sa --display-name="Cloud Build Service Account"
+```
+
+- Add roles to the service account. 
+
+```
+gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
+  --member="serviceAccount:cloud-build-sa@[YOUR_PROJECT_ID].iam.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.builder"
+```
+
+- Also add roles of Cloud Run (deploy) and Artifact Registry (read/write).
+
+```shell
+gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
+  --member="serviceAccount:cloud-build-sa@[YOUR_PROJECT_ID].iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
+  --member="serviceAccount:cloud-build-sa@[YOUR_PROJECT_ID].iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+```
+
+```shell
+gcloud builds submit --config cloudbuild.yaml --service-account=projects/[PROJECT_ID]/serviceAccounts/[SERVICE_ACCOUNT_EMAIL]
 ```
