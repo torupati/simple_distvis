@@ -24,7 +24,6 @@ def plot_training_samples(ax, x, **kwargs) -> plt.Axes:
     ax.set_aspect("equal")
     return ax
 
-
 def plot_distortion_history(cost_history: list) -> tuple:
     """Plot distortion history
     Args:

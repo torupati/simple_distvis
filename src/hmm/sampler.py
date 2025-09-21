@@ -1,21 +1,11 @@
-import logging
-
-logger = logging.getLogger(__name__)
+# Sampler functions for HMM and K-Means
 
 import numpy as np
+from src.hmm.hmm import HMM
+from src.hmm.kmeans import KmeansCluster
 
-try:
-    from .hmm import HMM
-    logger.debug("Using relative import")
-except ImportError:
-    from  hmm import HMM
-    logger.debug("Using absoloute import")
-logger.debug(f"{__package__=}  {__name__=}  {__file__=}")
-
-#from  kmeans import KmeansCluster
-from .kmeans import KmeansCluster
-
-np.random.seed(1)
+import logging
+logger = logging.getLogger(__name__)
 
 
 def generate_sample_parameter(K:int = 4, D:int = 2, **kwargs):
@@ -24,67 +14,93 @@ def generate_sample_parameter(K:int = 4, D:int = 2, **kwargs):
     Returns:
         _type_: _description_
     """
-    logger.info(f'{K=} {D=}')
-    param = KmeansCluster(K, D)
-
-    param.Pi = np.array([1/K]*K)
-
     if kwargs.get('PRESET', False):
-        param.Mu = np.array([[3.0, 3.0],\
+        init_prob = np.array([[3.0, 3.0],\
         [0.0, 2.0],\
         [2.0, -3.5],\
         [-3.0, 0.0]])
 
-        param.Sigma = np.array([\
+        covariances = np.array([\
         [[1.0, 0.0],[0.0, 1.0]],\
         [[0.3, 0.1],[0.1, 0.1]], \
         [[0.6, -0.3],[-0.3,0.5]],
         [[1.0, 0.8],[0.8, 0.8]]])
-        return param
-    param.Mu = np.random.randn(K, D)
-    param.Sigma = np.zeros((K, D, D))
+        return init_prob, covariances
+
+    init_prob = np.array([1/K]*K)
+    mean_vectors = np.random.randn(K, D)
+    covariances = np.zeros((K, D, D))
     for k in range(K):
-        param.Sigma[k, :, :] = np.eye(D)
-    return param
+        covariances[k, :, :] = np.eye(D)
+    return init_prob, mean_vectors, covariances
 
 
-def generate_samples(n_sample: int, kmeans_param) -> np.ndarray:
-    """_summary_
+def generate_gmm_samples(n_sample: int, weights: np.ndarray, centroids: np.ndarray, covariances: np.ndarray) -> np.ndarray:
+    """Generate samples from a GMM parameter.
 
     Args:
         n_sample (int): number of samples to be generated.
-        kmeans_param (_type_): mean and covaraince
+        weights (np.ndarray): weights of each cluster, shape (K,)
+        centroids (np.ndarray): centroids of each cluster, shape (K,D)
+        covariances (np.ndarray): covariances of each cluster, shape (K,D,D) or (K,D) for diagonal covariance.
 
     Returns:
         np.ndarray: generated samples.
     """
-    logger.info(f'{n_sample=} {kmeans_param=}')
-    X = np.zeros((n_sample, kmeans_param.D))
-    counts = np.random.multinomial(n_sample, kmeans_param.Pi)
-    i = 0
-    k = 0
-    if len(kmeans_param.Sigma.shape) == 2:
-        S = np.diag(kmeans_param.Sigma[k,:])
-    elif len(kmeans_param.Sigma.shape) == 3:
-        S = kmeans_param.Sigma
+    num_cluster = len(weights)
+    if num_cluster < 1:
+        raise ValueError("num_cluster must be > 0")
+    if not np.isclose(np.sum(weights), 1.0):
+        raise ValueError("weights must sum to 1.0")
+    if np.any(weights < 0.0):
+        raise ValueError("weights must be non-negative")
+    feature_dim = covariances.shape[1]
+    if len(covariances.shape) == 2:
+        if covariances.shape[0] != feature_dim:
+            raise ValueError("covariances shape mismatch")
+    elif len(covariances.shape) == 3:
+        if covariances.shape[0] != num_cluster or covariances.shape[1] != feature_dim or covariances.shape[2] != feature_dim:
+            raise ValueError("covariances shape mismatch")
+    else:
+        raise ValueError("covariances must be 2D or 3D array")
+    logger.info(f'Generating {n_sample} samples from GMM: K={num_cluster}, D={feature_dim}')
+
+    # Allocate space for samples
+    sample_data = np.zeros((n_sample, feature_dim))
+
+    # Determine number of samples for each cluster
+    counts = np.random.multinomial(n_sample, weights) # samples count for each cluster
+    logger.info(f'counts={counts}')
+    labels = []
+    for k in range(num_cluster):
+        labels += [k] * counts[k]
+    #np.random.shuffle(labels) # shuffle labels
+
+    # Prepare covariance matrices
+    if len(covariances.shape) == 2:
+        logger.info("Using diagonal covariance")
+        covariances = np.array([np.diag(covariances[_k,:]) for _k in range(num_cluster)])
+    print(covariances.shape)
     # Prepare matrix L such as L*L = S
-    L = [np.linalg.cholesky(S[k,:,:]) for k in range(kmeans_param.K)]
-    while i < n_sample:
+    L = [np.linalg.cholesky(covariances[_k,:,:]) for _k in range(num_cluster)]
+    i = 0
+    for k in range(num_cluster):
+        # generate samples for cluster k
+        # sample from N(0,I)
         for j in range(counts[k]):
-            X[i+j,:] = kmeans_param.Mu[k,:] \
-                + np.dot(L[k], np.random.randn(kmeans_param.D))
+            sample_data[i+j,:] = centroids[k,:] \
+                + np.dot(L[k], np.random.randn(feature_dim))
         i += counts[k]
-        k += 1
-    return X
+    return sample_data, labels
 
 
 def sample_markov_process(length:int, init_prob, tran_prob):
-    """_summary_
+    """Sample a Markov process with given model parameters.
 
     Args:
         length (int): length of state sequence
-        init_prob (_type_): initial state probability, pi[i] = P(s[t=0]=i)
-        tran_prob (_type_): state transition probability, a[i][j] = P(s[t]=j|s[t-1]=i)
+        init_prob (np.ndarray): initial state probability, pi[i] = P(s[t=0]=i)
+        tran_prob (np.ndarray): state transition probability, a[i][j] = P(s[t]=j|s[t-1]=i)
     """
     #print(f'init_prob.shape={init_prob.shape} tran_prob.shape={tran_prob.shape}')
     if length < 1:
@@ -120,9 +136,9 @@ def sample_multiple_markov_process(num:int, init_prob, tran_prob):
     Sampling multiple Markov processes with given model paremeters.
 
     Args:
-        num (int): _description_
-        init_prob (_type_): _description_
-        tran_prob (_type_): _description_
+        num (int): number of sequences to be generated
+        init_prob (np.ndarray): initial state probability, pi[i] = P(s[t=0]=i)
+        tran_prob (np.ndarray): state transition probability, a[i][j] = P(s[t=j] | s[t-1]=i)
     """
     assert num > 0
     lengths = sample_lengths(10, num)
@@ -137,8 +153,8 @@ def sampling_from_hmm(sequence_lengths, hmm:HMM):
     """sample HMM output and its hidden states from given parameters
 
     Args:
-        n_sequence (int): _description_
-        hmm (HMM): _description_
+        n_sequence (int): number of sequences to be generated
+        hmm (HMM): Hidden Markov Model instance
     """
     out = []
     outdim_ids = hmm.D
