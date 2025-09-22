@@ -117,5 +117,12 @@ gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
 ```
 
 ```shell
+gcloud iam service-accounts add-iam-policy-binding [target_service_account_email] \
+  --member="serviceAccount:[service_account_email_granting_to_target]" \
+  --role="roles/iam.serviceAccountUser" \
+  --project=[YOUR_PROJECT_ID]
+```
+
+```shell
 gcloud builds submit --config cloudbuild.yaml --service-account=projects/[PROJECT_ID]/serviceAccounts/[SERVICE_ACCOUNT_EMAIL]
 ```

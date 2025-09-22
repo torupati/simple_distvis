@@ -5,7 +5,7 @@
 # python tools/sample_generator.py HMM 100 out_hmm.pickle --avelen 10
 # python tools/sample_generator.py MM 100 out_mm.pickle
 import numpy as np
-from src.hmm.sampler import generate_sample_parameter, generate_gmm_samples
+from src.hmm.sampler import generate_sample_parameter, generate_gmm_samples, save_sequences_with_blank
 from src.hmm.sampler import sample_lengths, sampling_from_hmm, sample_multiple_markov_process
 from src.hmm.kmeans import pickle_kmeans_and_data_by_dict
 from src.hmm.hmm import HMM, pickle_hmm_and_data_by_dict
@@ -48,6 +48,29 @@ def main_gmm(args):
     _logger.info('output: %s', args.out_file)
 
 
+def main_mm(args):
+    _logger.info(f'Markov Process: {args=}')
+
+    init_state = np.array([0.1, 0.9])
+    state_tran = np.array([[0.9, 0.1],
+                           [0.5, 0.5]])
+
+    sample_data = sample_multiple_markov_process(args.N, init_state, state_tran)
+    _logger.info('generated sample size: n=%d', len(sample_data))
+
+    if args.csv:
+        save_sequences_with_blank(args.out_file, sample_data)
+    else:
+        markov_model_dict = {
+            'init_prob': init_state,
+            'tran_prob': state_tran,
+            'model_type': 'MarkovProcess',
+            'number_of_process': args.N,
+        }
+        pickle_kmeans_and_data_by_dict(args.out_file, markov_model_dict, sample_data)
+    _logger.info('output: %s', args.out_file)
+
+
 def main_hmm(args):
     _logger.info(f'{args=}')
 
@@ -65,23 +88,6 @@ def main_hmm(args):
     pickle_hmm_and_data_by_dict(args.out_file, hmm_param, x, st)
     _logger.info(f'output: {args.out_file}')
 
-def main_mm(args):
-    _logger.info(f'{args=}')
-    np.random.seed(1)
-
-    init_state = np.array([0.1, 0.9])
-    state_tran = np.array([[0.9, 0.1],
-                           [0.5, 0.5]])
-
-    print("main_mm")
-    X = sample_multiple_markov_process(args.N, init_state, state_tran)
-    print(X)
-
-    #with open(args.out_file, 'wb') as f:
-    #    pickle.dump({'model_param': kmeans_param,
-    #                'sample': X,
-    #                'model_type': 'KmeansClustering'}, f)
-    #    print(args.out_file)
 
 import argparse
 

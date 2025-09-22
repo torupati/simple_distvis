@@ -104,9 +104,20 @@ def sample_markov_process(length:int, init_prob, tran_prob):
     """
     #print(f'init_prob.shape={init_prob.shape} tran_prob.shape={tran_prob.shape}')
     if length < 1:
-        raise Exception('Length must be larger than 1.')
+        raise ValueError(f'Length must be larger than 1. length={length}')
+    if not np.isclose(np.sum(init_prob), 1.0):
+        raise ValueError("init_prob must sum to 1.0")
+    if np.any(init_prob < 0.0):
+        raise ValueError("init_prob must be non-negative")
+    if np.any(tran_prob < 0.0):
+        raise ValueError("tran_prob must be non-negative")
+    if not np.all(np.isclose(np.sum(tran_prob, axis=1), 1.0)):
+        raise ValueError("Each row of tran_prob must sum to 1.0")
+    # Check dimensions
     n_states = len(init_prob)
-    assert tran_prob.shape == (n_states, n_states)
+    if tran_prob.shape != (n_states, n_states):
+        raise ValueError("tran_prob shape mismatch")
+    # Sample
     s = [np.nan] * length
     s[0] = np.random.choice(n_states, p=init_prob)
     for t in range(1,length):
@@ -168,4 +179,31 @@ def sampling_from_hmm(sequence_lengths, hmm:HMM):
         out.append(obs)
     return states, out
 
+def save_sequences_with_blank(filename: str, sequences: list[np.ndarray]):
+    """
+    sequences: list of 2D numpy arrays (each sequence: shape=(T, D) or (T,))
+    """
+    with open(filename, "w") as f:
+        for seq in sequences:
+            np.savetxt(f, seq, delimiter=",", fmt="%.6f")
+            f.write("\n")
 
+
+def load_sequences_with_blank(filename: str):
+    """
+    Return a list of sequences from a file. blank line separates sequences.
+    """
+    sequences = []
+    current = []
+    with open(filename, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line == "":
+                if current:
+                    sequences.append(np.array(current, dtype=float))
+                    current = []
+            else:
+                current.append([float(x) for x in line.split(",")])
+        if current:
+            sequences.append(np.array(current, dtype=float))
+    return sequences
