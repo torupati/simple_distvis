@@ -10,8 +10,8 @@ from scipy.stats import beta, bernoulli
 st.title("Beta-Bernoulli Bayesian Updating")
 
 st.header("Set Prior Beta Parameters")
-alpha_prior = st.slider("Prior α (successes + 1)", 0.1, 10.0, 2.0, step=0.1)
-beta_prior = st.slider("Prior β (failures + 1)", 0.1, 10.0, 2.0, step=0.1)
+alpha_prior = st.slider(r"Prior $\alpha$ (successes + 1)", 0.1, 10.0, 2.0, step=0.1)
+beta_prior = st.slider(r"Prior $\beta$ (failures + 1)", 0.1, 10.0, 2.0, step=0.1)
 
 st.header("Set Bernoulli Likelihood Parameters")
 n_trials = st.slider("Number of Bernoulli trials", 1, 100, 10, step=1)
