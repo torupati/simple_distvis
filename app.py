@@ -3,9 +3,9 @@ import logging
 
 logging.getLogger("watchdog").setLevel(logging.WARNING)
 
-st.set_page_config(page_title="Diffusion Animation App", page_icon="🌊")
+st.set_page_config(page_title="App", page_icon="🌊")
 
-st.title("Welcome to the Diffusion Animation App")
+st.title("Welcome to App")
 st.write(
     """
     Use the sidebar to select a page.
