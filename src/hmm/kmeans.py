@@ -10,27 +10,6 @@ from src.hmm.kmeans_plot import plot_data_with_centroid
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class KmeansException(Exception):
-    def __init__(self, arg=""):
-        self.arg = arg
-
-class InvalidParameterSetting(KmeansException):
-    def __str__(self):
-        return (
-            f"{self.arg=}"
-        )
-
-class InsideError(KmeansException):
-    def __str__(self):
-        return (
-            f"{self.arg=}"
-        )
-
-class InputSampleError(KmeansException):
-    def __str__(self):
-        return (
-            f"{self.arg=}"
-        )
 
 class KmeansCluster():
     """
@@ -89,7 +68,7 @@ class KmeansCluster():
             self._cov_mode = KmeansCluster.COV_NONE
             self.Sigma = None
         else:
-            raise InvalidParameterSetting('covariance mode is wrong in constructor.')
+            raise ValueError(f'covariance mode is wrong. got {kwargs["covariance_mode"]}')
 
         # define training variables
         #print(kwargs.get('trainvars', 'outside') == 'outside')
@@ -107,7 +86,7 @@ class KmeansCluster():
             elif self._cov_mode == KmeansCluster.COV_DIAG:
                 self._X2 = np.zeros([K, D])
         else:
-            raise InvalidParameterSetting('training variable mode.')
+            raise ValueError(f'training variable mode is wrong. got {kwargs["trainvars"]}')
 
         if kwargs.get('dist_mode', 'linear') == 'linear':
             self._dist_mode = KmeansCluster.DISTANCE_LINEAR_SCALE
@@ -116,7 +95,7 @@ class KmeansCluster():
         elif kwargs['dist_mode'] == 'kldiv':
             self._dist_mode = KmeansCluster.DISTANCE_KL_DIVERGENCE
         else:
-            raise InvalidParameterSetting('distance mode')
+            raise ValueError(f'distance mode is wrong. got {kwargs["dist_mode"]}')
 
     @property
     def K(self) -> int:
@@ -125,7 +104,7 @@ class KmeansCluster():
         Returns:
             int: cluster count
         """
-        return self._K
+        return self.Mu.shape[0]
 
     @property
     def D(self) -> int:
@@ -222,7 +201,7 @@ class KmeansCluster():
             float: loss of this sample
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise Exception('train mode is not TRAIN_VAR_INSIDE.')
+            raise NotImplementedError('Only TRAIN_VAR_INSIDE is supported now.')
         if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
             costs = [sum([v*v for v in (x - self.Mu[k, :])]) for k
                      in range(self._K)]
@@ -233,12 +212,12 @@ class KmeansCluster():
             costs = [KmeansCluster.KL_divergence(x, self.Mu[k, :]) for k
                      in range(self._K)]
         else:
-            raise InvalidParameterSetting("wrong distance model")
+            raise ValueError("wrong distance model")
         if np.isinf(costs).any():
             if self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
-                raise Exception(f'log(x)={np.log(x)}'
+                raise ValueError(f'log(x)={np.log(x)}'
                                 + f' log(mu)={np.log(self.Mu)} costs={costs}')
-            raise Exception(f'wrong input in distance computation x={x} mu={self.Mu}'
+            raise RuntimeError(f'wrong input in distance computation x={x} mu={self.Mu}'
                       + f'costs={costs}')
 
         k_min = np.argmin(costs)
@@ -253,14 +232,14 @@ class KmeansCluster():
                                      * x.reshape(1, self._D))
         return k_min, costs[k_min]
 
-    def ClearTrainigVariables(self):
+    def ClearTrainingVariables(self):
         """Reset inside statistics for training
 
         Raises:
-            Exception: invalid triaing setting
+            Exception: invalid training setting
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise Exception('train mode is not TRAIN_VAR_INSIDE.')
+            raise NotImplementedError('Only TRAIN_VAR_INSIDE is supported now.')
         self._loss = 0.0
         self._X0 = np.zeros([self._K])
         self._X1 = np.zeros([self._K, self._D])
@@ -282,7 +261,7 @@ class KmeansCluster():
             _type_: _description_
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise Exception('train mode is not TRAIN_VAR_INSIDE.')
+            raise NotImplementedError('Only TRAIN_VAR_INSIDE is supported now.')
         for k in range(self._K):
             if self._X0[k] == 0:
                 continue
@@ -307,8 +286,8 @@ class KmeansCluster():
         """Calculate KL divergence beteen two vectors.
 
         Args:
-            x (np.ndarray): _description_
-            y (np.ndarray): _description_
+            x (np.ndarray): probability vector
+            y (np.ndarray): probability vector
         Note:
             input vectors must be non negative.
 
@@ -340,7 +319,7 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     K, Dim = mu_init.shape
     N, Dim2 = X.shape
     if Dim != Dim2:
-        raise InsideError(f"Wrong dim. M: {Dim}  X: {Dim2}")
+        raise ValueError(f"Wrong dim. X(N,D={Dim}), mu_init(M, D={Dim2})")
 
     max_it = kwargs.get('max_it', 20)
     #save_ckpt = kwargs.get('save_ckpt', False)
@@ -353,8 +332,7 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     cost_history = []
     align_history = []
     for it in range(max_it):
-        kmeansparam.ClearTrainigVariables()
-
+        kmeansparam.ClearTrainingVariables()
         # Push all samples (align samples to clusters)
         for n in range(N):
             _, _ = kmeansparam.PushSample(X[n, :])

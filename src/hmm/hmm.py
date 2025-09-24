@@ -9,6 +9,9 @@ import json
 import pickle
 from os import path, makedirs
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 eps = 1.0E-128 # to avoid log(0)
 
 class HMM:
@@ -317,7 +320,7 @@ class HMM:
         # reset training variables
         self._ini_state_stat = np.zeros(self._M)
         self._state_tran_stat = np.zeros((self._M,self._M))
-        self._obs_coutn = np.zeros((self._M, self._D))
+        self._obs_count = np.zeros((self._M, self._D))
         self._training_count = 0
 
         tll = self._training_total_log_likelihood
@@ -341,7 +344,7 @@ def hmm_viterbi_training(hmm, obss_seqs):
             g1, g2, ll = hmm.forward_viterbi(x)
             hmm.push_sufficient_statistics(x,g1,g2)
         total_likelihood = hmm.update_parameters()
-        print("itr {} E[logP(X)]={}".format(itr_count, total_likelihood/len(obss_seqs)))
+        logger.info("itr {} E[logP(X)]={}".format(itr_count, total_likelihood/len(obss_seqs)))
         training_history['step'].append(itr_count)
         training_history['log_likelihood'].append(total_likelihood/len(obss_seqs))
 
