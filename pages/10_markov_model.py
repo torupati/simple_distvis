@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 st.title("Markov Model State Probability Evolution")
 
@@ -80,12 +81,48 @@ if st.button("Run simulation", disabled=not run_enabled):
     ax.set_ylabel("Probability")
     ax.set_title("State Probabilities Over Time")
     ax.legend()
-    ax.set_ylim(bottom=0)  # Set Y-axis minimum to 0
-    ax.set_xlim(xmin=0, xmax=n_steps - 1)  # Set X-axis limits
-    ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Make X-axis labels integer
+    ax.set_ylim(bottom=0)
+    ax.set_xlim(xmin=0, xmax=n_steps - 1)
+    ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
     st.pyplot(fig)
 
     # Show final state probabilities as a table
     st.markdown("### Final State Probabilities")
     final_probs = probs[-1]
     st.table({f"State {i}": [final_probs[i]] for i in range(n_states)})
+
+    # --- Markov process sample generation and visualization ---
+    from src.hmm.sampler import sample_markov_process
+
+    markov_length = 500
+    init_prob = st.session_state["init_prob"]
+    trans_mat = st.session_state["trans_mat"]
+    state_seq = sample_markov_process(markov_length, init_prob, trans_mat)
+
+    # Plot state sequence (step vs state)
+    fig2, ax2 = plt.subplots(figsize=(8, 2))
+    ax2.plot(np.arange(markov_length), state_seq, marker=".", linestyle='dotted', drawstyle="steps-post", alpha=0.3)
+    ax2.set_xlabel("Step")
+    ax2.set_ylabel("State")
+    ax2.set_title("Sampled Markov State Sequence")
+    ax2.set_yticks(np.arange(n_states))
+    st.pyplot(fig2)
+
+    # Histogram for steps 100 and after
+    hist_range = state_seq[100:]
+    hist, bins = np.histogram(hist_range, bins=np.arange(n_states+1)-0.5)
+    fig3, ax3 = plt.subplots()
+    ax3.bar(np.arange(n_states), hist, tick_label=[f"State {i}" for i in range(n_states)])
+    ax3.set_xlabel("State")
+    ax3.set_ylabel("Frequency")
+    ax3.set_title("Histogram of States (Step 100 and after)")
+    st.pyplot(fig3)
+
+    # Show histogram as table with relative frequency
+    st.markdown("### State Frequency (Step 100 and after)")
+    total = hist.sum()
+    df = pd.DataFrame({
+        "Count": hist,
+        "Relative Frequency": hist / total
+    }, index=[f"State {i}" for i in range(n_states)])
+    st.table(df)
