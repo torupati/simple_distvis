@@ -88,7 +88,8 @@ class HMM:
             obss (List[int]): given observation sequence(descreat signal), y[t]
 
         Returns:
-            _type_: _description_
+            best_path (List[int]): most probable state sequence, s[t]
+            log_prob (float): log P(X|best_path) P(best_path)
         """
 
         T = len(obss)
@@ -295,10 +296,12 @@ class HMM:
         self._training_count += 1
 
     def update_parameters(self):
-        """_summary_
+        """ Update HMM parameters by sufficiency statistics.
+        Normalize sufficiency statistics and update parameters.
+        After update, sufficiency statistics are reset to zero.
 
         Returns:
-            _type_: _description_
+            float: total log likelihood of training data
         """
         _init_state = self._ini_state_stat / sum(self._ini_state_stat)
         _init_state[_init_state < eps] = eps # if probability is lower then eps, set eps to void log(0)
@@ -324,10 +327,11 @@ class HMM:
 
 def hmm_viterbi_training(hmm, obss_seqs):
     """
+    HMM training using Viterbi training algorithm.
 
     Args:
-        hmm (_type_): _description_
-        obss_seqs (_type_): _description_
+        hmm (HMM): HMM parameter
+        obss_seqs (list[np.ndarray]): observation sequences
     """
     itr_count = 0
     training_history={'step':[], 'log_likelihood':[]}
@@ -418,13 +422,10 @@ def pickle_hmm_and_data_by_dict(out_file:str, hmm:HMM, x:np.ndarray, st:np.ndarr
 
 
 def print_state_obs(x, st):
+    """Print observation and state sequence.
+    Args:
+        x (np.ndarray): observation sequence
+        st (np.ndarray): state sequence
+    """
     for i, (_x, _s) in enumerate(zip(x, st)):
-        print(f't={i} s={st[i]} x={x[i]}')
-
-
-
-
-
-#if __name__=='__main__':
-#    ...
-
+        print(f't={i} s={_s} x={_x}')

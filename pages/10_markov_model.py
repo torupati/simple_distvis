@@ -94,7 +94,7 @@ if st.button("Run simulation", disabled=not run_enabled):
     # --- Markov process sample generation and visualization ---
     from src.hmm.sampler import sample_markov_process
 
-    markov_length = 500
+    markov_length = 1000
     init_prob = st.session_state["init_prob"]
     trans_mat = st.session_state["trans_mat"]
     state_seq = sample_markov_process(markov_length, init_prob, trans_mat)
