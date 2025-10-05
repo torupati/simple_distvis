@@ -159,7 +159,7 @@ uv run pytest tests/test_kmeans.py
 ```
 
 
-```
+```shell
 # To disable capture of stdout, ```--cpature=no``` or ```-s``` can be used.
 uv run pytest --cov -v --capture=no
 # show print statement or logging output

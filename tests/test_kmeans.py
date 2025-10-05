@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from hmm.kmeans import KmeansCluster
+from src.hmm.kmeans import KmeansCluster
 
 class TestKmeansCluster:
     def test_kl_divergence(self):
@@ -15,3 +15,22 @@ class TestKmeansCluster:
         cluster._train_mode = "INVALID"
         with pytest.raises(NotImplementedError, match="Only TRAIN_VAR_INSIDE is supported now"):
             cluster.UpdateParameters()
+
+
+def test_kmeans_constructor():
+    try:
+        _ = KmeansCluster(10, 10, covariance_mode="diag")
+    except ValueError as e:
+        print(e)
+    try:
+        _ = KmeansCluster(10, 10, covariance_mode="full")
+    except ValueError as e:
+        print(e)
+    try:
+        _ = KmeansCluster(10, 10, covariance_mode="none")
+    except ValueError as e:
+        print(e)
+    try:
+        _ = KmeansCluster(10, 10, covariance_mode="foofoo")
+    except ValueError as e:
+        print(e)
