@@ -126,3 +126,44 @@ gcloud iam service-accounts add-iam-policy-binding [target_service_account_email
 ```shell
 gcloud builds submit --config cloudbuild.yaml --service-account=projects/[PROJECT_ID]/serviceAccounts/[SERVICE_ACCOUNT_EMAIL]
 ```
+
+## Stop /close
+
+You have a couple of options for disabling your Cloud Run services, which effectively stops any running instances. The primary method is to set the scaling of your service to zero instances. This allows existing requests to complete but prevents new ones from being processed.
+
+
+```shell
+gcloud beta run services update SERVICE_NAME --scaling=0 --region=REGION_NAME --project=PROJECT_ID
+```
+
+
+## Development MEMO
+
+### Unit test
+
+Add pytest in independencies.
+
+```shell
+uv add pytest --dev
+uv add pytest-cov --dev
+```
+
+Run unit tests.
+
+```shell
+# with coverage and detail output
+uv run pytest --cov=src -v
+
+# specific file
+uv run pytest tests/test_kmeans.py
+```
+
+
+```
+# To disable capture of stdout, ```--cpature=no``` or ```-s``` can be used.
+uv run pytest --cov -v --capture=no
+# show print statement or logging output
+uv run pytest --cov -v --capture=sys
+# show all
+uv run pytest --cov -v --tb=short -s
+```
