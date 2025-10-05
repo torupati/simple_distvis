@@ -180,6 +180,7 @@ uv run ruff check .
 
 # fix
 uv run ruff check --fix .
+uv run ruff check --fix --unsafe-fixes .
 
 # format
 uv run ruff format .

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from src.hmm.hmm import HMM, hmm_viterbi_training, print_state_obs
+from src.hmm.hmm import HMM, hmm_baum_welch, hmm_viterbi_training, print_state_obs
 from src.hmm.sampler import sampling_from_hmm
 
 
@@ -127,7 +127,7 @@ def test_baum_welch():
 
     hmm.randomize_parameter()
     print(f"hmm={hmm}")
-    # hmm_baum_welch(hmm, training_data)
+    hmm_baum_welch(hmm, training_data)
     print(f"hmm={hmm}")
 
 

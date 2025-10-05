@@ -1,12 +1,13 @@
 from logging import DEBUG, getLogger
 
-logger = getLogger(__name__)
-logger.setLevel(DEBUG)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
 from scipy.stats import norm
+
+logger = getLogger(__name__)
+logger.setLevel(DEBUG)
 
 st.set_page_config(layout="wide")
 st.title("Gaussian Prior and Bayesian Updating")

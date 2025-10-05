@@ -138,7 +138,7 @@ class GaussianMixtureModel:
         Args:
             X(N,D), training samples. (N is number of samples, D is dimension)
         """
-        N, D, M = x.shape[0], x.shape[1], gamma.shape[1]
+        N = x.shape[0]
         self.Pi = sum(gamma, axis=0) / sum(gamma)
         self.Mu = dot(gamma.transpose(), x)
         for m in range(self.M):

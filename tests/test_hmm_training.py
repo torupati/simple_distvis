@@ -64,7 +64,7 @@ def test_forward_backward():
 
     #
     state_name = ["A dominant", "B dominant", "Transient"]
-    state_labels = ["A boom", "B boom", "Trans."]
+    # state_labels = ["A boom", "B boom", "Trans."]
     names = ["A", "B", "C", "D"]
     fig, axs = fig, axs = plt.subplots(1, M, figsize=(9, 3), sharey=True)
     for b, b0, b_t, st_name, ax in zip(

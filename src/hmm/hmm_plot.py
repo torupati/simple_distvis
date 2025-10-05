@@ -44,12 +44,10 @@ def plot_checkpoint_dir(ckpt_file):
 
     state_name = ["A dominant", "B dominant", "Transient"]
     names = ["A", "B", "C", "D"]
-    with open(
-        ckpt_file,
-    ) as f:
+    with open(ckpt_file, "rb") as f:
         model = pickle.load(f)
         hmm = model.get("model", None)
-        model_type = model.get("model_type", "")
+        # model_type = model.get("model_type", "")
         #                     'total_likelihood': total_likelihood,
         #                     'total_sequence_num': len(obss_seqs),
         #                     'total_obs_num': total_obs_num,

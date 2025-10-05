@@ -1,16 +1,15 @@
+import io
+import json
 import logging
 import pickle
 
+import matplotlib.pyplot as plt
 import numpy as np
+import streamlit as st
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
 
-import io
-import json
-
-import matplotlib.pyplot as plt
-import streamlit as st
 
 st.set_page_config(layout="centered")  # centered or wide
 
