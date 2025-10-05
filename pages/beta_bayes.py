@@ -2,10 +2,11 @@
 A Streamlit app to visualize Bayesian updating with a Beta prior and Bernoulli likelihood.
 Users can adjust the parameters of the Beta prior and the number of successes/failures in the Bernoulli trials.
 """
-import streamlit as st
-import numpy as np
+
 import matplotlib.pyplot as plt
-from scipy.stats import beta, bernoulli
+import numpy as np
+import streamlit as st
+from scipy.stats import beta
 
 st.title("Beta-Bernoulli Bayesian Updating")
 
@@ -24,7 +25,7 @@ beta_post = beta_prior + (n_trials - n_success)
 # Plotting
 x = np.linspace(0, 1, 400)
 prior_pdf = beta.pdf(x, alpha_prior, beta_prior)
-likelihood_pdf = x**n_success * (1-x)**(n_trials-n_success)
+likelihood_pdf = x**n_success * (1 - x) ** (n_trials - n_success)
 likelihood_pdf /= np.max(likelihood_pdf)  # normalize for display
 posterior_pdf = beta.pdf(x, alpha_post, beta_post)
 
@@ -35,14 +36,14 @@ show_posterior = st.checkbox("Show Posterior", value=True)
 
 fig, ax = plt.subplots(figsize=(8, 5))
 if show_prior:
-    ax.plot(x, prior_pdf, label="Prior (Beta)", color='blue')
-    ax.fill_between(x, prior_pdf, color='blue', alpha=0.2)
+    ax.plot(x, prior_pdf, label="Prior (Beta)", color="blue")
+    ax.fill_between(x, prior_pdf, color="blue", alpha=0.2)
 if show_likelihood:
-    ax.plot(x, likelihood_pdf, label="Likelihood (Bernoulli)", color='green')
-    ax.fill_between(x, likelihood_pdf, color='green', alpha=0.2)
+    ax.plot(x, likelihood_pdf, label="Likelihood (Bernoulli)", color="green")
+    ax.fill_between(x, likelihood_pdf, color="green", alpha=0.2)
 if show_posterior:
-    ax.plot(x, posterior_pdf, label="Posterior (Beta)", color='red')
-    ax.fill_between(x, posterior_pdf, color='red', alpha=0.2)
+    ax.plot(x, posterior_pdf, label="Posterior (Beta)", color="red")
+    ax.fill_between(x, posterior_pdf, color="red", alpha=0.2)
 ax.set_xlabel("Parameter θ")
 ax.set_ylabel("Density")
 ax.set_title("Beta-Bernoulli Bayesian Update")

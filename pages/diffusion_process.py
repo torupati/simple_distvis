@@ -1,9 +1,10 @@
-import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import tempfile
 import logging
+import tempfile
+
+import matplotlib.pyplot as plt
+import numpy as np
+import streamlit as st
+from matplotlib.animation import FuncAnimation
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -11,7 +12,10 @@ st.set_page_config(layout="wide")
 
 st.title("Diffusion Process")
 
-seed = st.number_input("Set random seed", min_value=0, max_value=999999, value=0, step=1)
+seed = st.number_input(
+    "Set random seed", min_value=0, max_value=999999, value=0, step=1
+)
+
 
 def run_simulation(seed):
     np.random.seed(seed)
@@ -24,16 +28,16 @@ def run_simulation(seed):
     times = []
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
-    line, = ax1.plot([], [], lw=2)
-    fill_area = ax1.fill_between([], [], color='orange', alpha=0.3)
+    (line,) = ax1.plot([], [], lw=2)
+    fill_area = ax1.fill_between([], [], color="orange", alpha=0.3)
     print(f"{fill_area=}")
     ax1.set_xlim(pos_min, pos_max)
     ax1.set_ylim(0, 5)
     ax1.set_xlabel("x")
     ax1.set_ylabel("Probability Density")
 
-    scat = ax2.scatter([], [], color='blue', s=30)
-    line2, = ax2.plot([], [], color='orange', lw=2)
+    scat = ax2.scatter([], [], color="blue", s=30)
+    (line2,) = ax2.plot([], [], color="orange", lw=2)
     ax2.set_xlim(0, timesteps)
     ax2.set_ylim(pos_min, pos_max)
     ax2.set_xlabel("Time step t")
@@ -41,7 +45,7 @@ def run_simulation(seed):
     ax2.set_title("Sampled position x vs time t")
 
     def gaussian(x, mean, var):
-        return 1/(np.sqrt(2*np.pi*var)) * np.exp(-(x-mean)**2/(2*var))
+        return 1 / (np.sqrt(2 * np.pi * var)) * np.exp(-((x - mean) ** 2) / (2 * var))
 
     def init():
         logging.debug("init")
@@ -54,7 +58,7 @@ def run_simulation(seed):
         scat.set_offsets(np.column_stack(([], [])))
         return line, scat, line2
 
-    def update(frame:int):
+    def update(frame: int):
         nonlocal samples, times, fill_area
         sig2 = initial_std**2 + frame * vel_sig2
         sigma = np.sqrt(sig2)
@@ -67,16 +71,18 @@ def run_simulation(seed):
 
         y = gaussian(x, 0, sig2)
         line.set_data(x, y)
-        ax1.set_title(r"step = {frame}, $\sigma^2$ = {sig2:.2f}".format(frame=frame, sig2=sig2))
+        ax1.set_title(
+            r"step = {frame}, $\sigma^2$ = {sig2:.2f}".format(frame=frame, sig2=sig2)
+        )
         ax1.grid(True)
 
         # Fill one-sigma area for current frame
         mask = (x >= -sigma) & (x <= sigma)
         fill_area = np.column_stack((x[mask], y[mask]))
 
-        data = np.column_stack((times[:frame+1], samples[:frame+1]))
+        data = np.column_stack((times[: frame + 1], samples[: frame + 1]))
         scat.set_offsets(data)
-        line2.set_data(times[:frame+1], samples[:frame+1])
+        line2.set_data(times[: frame + 1], samples[: frame + 1])
         ax2.set_title(f"Sampled position x vs time t (t={frame})")
         return line, scat, line2
 
@@ -85,6 +91,7 @@ def run_simulation(seed):
     with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
         ani.save(tmpfile.name, writer="pillow", fps=2)
         st.image(tmpfile.name)
+
 
 if st.button("Recalculate Simulation"):
     run_simulation(seed)

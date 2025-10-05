@@ -1,12 +1,14 @@
-import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import streamlit as st
 
 st.title("Markov Model State Probability Evolution")
 
 # User input for number of states
-n_states = st.number_input("Number of states", min_value=2, max_value=10, value=3, step=1)
+n_states = st.number_input(
+    "Number of states", min_value=2, max_value=10, value=3, step=1
+)
 
 # Generate probability button
 if st.button("Generate probability"):
@@ -20,13 +22,15 @@ if st.button("Generate probability"):
 
 # Editable initial probability and transition matrix
 if "init_prob" in st.session_state and "trans_mat" in st.session_state:
-    st.write("Edit the initial probability and transition matrix below. (Rows of transition matrix should sum to 1)")
+    st.write(
+        "Edit the initial probability and transition matrix below. (Rows of transition matrix should sum to 1)"
+    )
     # Initial probability
     init_prob = st.session_state["init_prob"]
     try:
         init_prob_edit = st.text_input(
-            "Initial probability (comma separated)", 
-            value=",".join([f"{v:.4f}" for v in init_prob])
+            "Initial probability (comma separated)",
+            value=",".join([f"{v:.4f}" for v in init_prob]),
         )
         init_prob_new = np.array([float(x) for x in init_prob_edit.split(",")])
         if len(init_prob_new) == n_states and np.all(init_prob_new >= 0):
@@ -34,19 +38,24 @@ if "init_prob" in st.session_state and "trans_mat" in st.session_state:
             st.session_state["init_prob"] = init_prob_new
         else:
             st.warning("Please enter non-negative values, one for each state.")
-    except ValueError as e:
+    except ValueError:
         st.warning("Invalid input for initial probability.")
 
     # Transition matrix
     trans_mat = st.session_state["trans_mat"]
-    trans_mat_str = "\n".join([",".join([f"{v:.4f}" for v in row]) for row in trans_mat])
+    trans_mat_str = "\n".join(
+        [",".join([f"{v:.4f}" for v in row]) for row in trans_mat]
+    )
     trans_mat_edit = st.text_area(
         "Transition matrix (each row comma separated, rows separated by newlines)",
         value=trans_mat_str,
-        height=150
+        height=150,
     )
     try:
-        rows = [list(map(float, row.split(","))) for row in trans_mat_edit.strip().split("\n")]
+        rows = [
+            list(map(float, row.split(",")))
+            for row in trans_mat_edit.strip().split("\n")
+        ]
         trans_mat_new = np.array(rows)
         if trans_mat_new.shape == (n_states, n_states) and np.all(trans_mat_new >= 0):
             # Normalize each row to sum to 1
@@ -55,7 +64,9 @@ if "init_prob" in st.session_state and "trans_mat" in st.session_state:
         else:
             st.warning("Please enter non-negative values for a square matrix.")
     except ValueError:
-        st.warning("Invalid input for transition matrix. Ensure all values are numeric.")
+        st.warning(
+            "Invalid input for transition matrix. Ensure all values are numeric."
+        )
     except Exception as e:
         st.warning(f"An unexpected error occurred: {e}")
 
@@ -72,7 +83,7 @@ if st.button("Run simulation", disabled=not run_enabled):
     probs = np.zeros((n_steps, n_states))
     probs[0] = st.session_state["init_prob"]
     for t in range(1, n_steps):
-        probs[t] = probs[t-1] @ st.session_state["trans_mat"]
+        probs[t] = probs[t - 1] @ st.session_state["trans_mat"]
 
     fig, ax = plt.subplots(figsize=(8, 4))
     for i in range(n_states):
@@ -101,7 +112,14 @@ if st.button("Run simulation", disabled=not run_enabled):
 
     # Plot state sequence (step vs state)
     fig2, ax2 = plt.subplots(figsize=(8, 2))
-    ax2.plot(np.arange(markov_length), state_seq, marker=".", linestyle='dotted', drawstyle="steps-post", alpha=0.3)
+    ax2.plot(
+        np.arange(markov_length),
+        state_seq,
+        marker=".",
+        linestyle="dotted",
+        drawstyle="steps-post",
+        alpha=0.3,
+    )
     ax2.set_xlabel("Step")
     ax2.set_ylabel("State")
     ax2.set_title("Sampled Markov State Sequence")
@@ -110,9 +128,11 @@ if st.button("Run simulation", disabled=not run_enabled):
 
     # Histogram for steps 100 and after
     hist_range = state_seq[100:]
-    hist, bins = np.histogram(hist_range, bins=np.arange(n_states+1)-0.5)
+    hist, bins = np.histogram(hist_range, bins=np.arange(n_states + 1) - 0.5)
     fig3, ax3 = plt.subplots()
-    ax3.bar(np.arange(n_states), hist, tick_label=[f"State {i}" for i in range(n_states)])
+    ax3.bar(
+        np.arange(n_states), hist, tick_label=[f"State {i}" for i in range(n_states)]
+    )
     ax3.set_xlabel("State")
     ax3.set_ylabel("Frequency")
     ax3.set_title("Histogram of States (Step 100 and after)")
@@ -121,8 +141,8 @@ if st.button("Run simulation", disabled=not run_enabled):
     # Show histogram as table with relative frequency
     st.markdown("### State Frequency (Step 100 and after)")
     total = hist.sum()
-    df = pd.DataFrame({
-        "Count": hist,
-        "Relative Frequency": hist / total
-    }, index=[f"State {i}" for i in range(n_states)])
+    df = pd.DataFrame(
+        {"Count": hist, "Relative Frequency": hist / total},
+        index=[f"State {i}" for i in range(n_states)],
+    )
     st.table(df)

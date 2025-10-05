@@ -1,33 +1,34 @@
 # Sampler functions for HMM and K-Means
 
-import numpy as np
-from src.hmm.hmm import HMM
-from src.hmm.kmeans import KmeansCluster
-
 import logging
+
+import numpy as np
+
+from src.hmm.hmm import HMM
+
 logger = logging.getLogger(__name__)
 
 
-def generate_sample_parameter(K:int = 4, D:int = 2, **kwargs):
+def generate_sample_parameter(K: int = 4, D: int = 2, **kwargs):
     """Create D-dimensional K component mean and covariance.
 
     Returns:
         _type_: _description_
     """
-    if kwargs.get('PRESET', False):
-        init_prob = np.array([[3.0, 3.0],\
-        [0.0, 2.0],\
-        [2.0, -3.5],\
-        [-3.0, 0.0]])
+    if kwargs.get("PRESET", False):
+        init_prob = np.array([[3.0, 3.0], [0.0, 2.0], [2.0, -3.5], [-3.0, 0.0]])
 
-        covariances = np.array([\
-        [[1.0, 0.0],[0.0, 1.0]],\
-        [[0.3, 0.1],[0.1, 0.1]], \
-        [[0.6, -0.3],[-0.3,0.5]],
-        [[1.0, 0.8],[0.8, 0.8]]])
+        covariances = np.array(
+            [
+                [[1.0, 0.0], [0.0, 1.0]],
+                [[0.3, 0.1], [0.1, 0.1]],
+                [[0.6, -0.3], [-0.3, 0.5]],
+                [[1.0, 0.8], [0.8, 0.8]],
+            ]
+        )
         return init_prob, covariances
 
-    init_prob = np.array([1/K]*K)
+    init_prob = np.array([1 / K] * K)
     mean_vectors = np.random.randn(K, D)
     covariances = np.zeros((K, D, D))
     for k in range(K):
@@ -35,7 +36,9 @@ def generate_sample_parameter(K:int = 4, D:int = 2, **kwargs):
     return init_prob, mean_vectors, covariances
 
 
-def generate_gmm_samples(n_sample: int, weights: np.ndarray, centroids: np.ndarray, covariances: np.ndarray) -> np.ndarray:
+def generate_gmm_samples(
+    n_sample: int, weights: np.ndarray, centroids: np.ndarray, covariances: np.ndarray
+) -> np.ndarray:
     """Generate samples from a GMM parameter.
 
     Args:
@@ -59,42 +62,51 @@ def generate_gmm_samples(n_sample: int, weights: np.ndarray, centroids: np.ndarr
         if covariances.shape[0] != feature_dim:
             raise ValueError("covariances shape mismatch")
     elif len(covariances.shape) == 3:
-        if covariances.shape[0] != num_cluster or covariances.shape[1] != feature_dim or covariances.shape[2] != feature_dim:
+        if (
+            covariances.shape[0] != num_cluster
+            or covariances.shape[1] != feature_dim
+            or covariances.shape[2] != feature_dim
+        ):
             raise ValueError("covariances shape mismatch")
     else:
         raise ValueError("covariances must be 2D or 3D array")
-    logger.info(f'Generating {n_sample} samples from GMM: K={num_cluster}, D={feature_dim}')
+    logger.info(
+        f"Generating {n_sample} samples from GMM: K={num_cluster}, D={feature_dim}"
+    )
 
     # Allocate space for samples
     sample_data = np.zeros((n_sample, feature_dim))
 
     # Determine number of samples for each cluster
-    counts = np.random.multinomial(n_sample, weights) # samples count for each cluster
-    logger.info(f'counts={counts}')
+    counts = np.random.multinomial(n_sample, weights)  # samples count for each cluster
+    logger.info(f"counts={counts}")
     labels = []
     for k in range(num_cluster):
         labels += [k] * counts[k]
-    #np.random.shuffle(labels) # shuffle labels
+    # np.random.shuffle(labels) # shuffle labels
 
     # Prepare covariance matrices
     if len(covariances.shape) == 2:
         logger.info("Using diagonal covariance")
-        covariances = np.array([np.diag(covariances[_k,:]) for _k in range(num_cluster)])
+        covariances = np.array(
+            [np.diag(covariances[_k, :]) for _k in range(num_cluster)]
+        )
     print(covariances.shape)
     # Prepare matrix L such as L*L = S
-    L = [np.linalg.cholesky(covariances[_k,:,:]) for _k in range(num_cluster)]
+    L = [np.linalg.cholesky(covariances[_k, :, :]) for _k in range(num_cluster)]
     i = 0
     for k in range(num_cluster):
         # generate samples for cluster k
         # sample from N(0,I)
         for j in range(counts[k]):
-            sample_data[i+j,:] = centroids[k,:] \
-                + np.dot(L[k], np.random.randn(feature_dim))
+            sample_data[i + j, :] = centroids[k, :] + np.dot(
+                L[k], np.random.randn(feature_dim)
+            )
         i += counts[k]
     return sample_data, labels
 
 
-def sample_markov_process(length:int, init_prob, tran_prob):
+def sample_markov_process(length: int, init_prob, tran_prob):
     """Sample a Markov process with given model parameters.
 
     Args:
@@ -102,9 +114,9 @@ def sample_markov_process(length:int, init_prob, tran_prob):
         init_prob (np.ndarray): initial state probability, pi[i] = P(s[t=0]=i)
         tran_prob (np.ndarray): state transition probability, a[i][j] = P(s[t]=j|s[t-1]=i)
     """
-    #print(f'init_prob.shape={init_prob.shape} tran_prob.shape={tran_prob.shape}')
+    # print(f'init_prob.shape={init_prob.shape} tran_prob.shape={tran_prob.shape}')
     if length < 1:
-        raise ValueError(f'Length must be larger than 1. length={length}')
+        raise ValueError(f"Length must be larger than 1. length={length}")
     if not np.isclose(np.sum(init_prob), 1.0):
         raise ValueError("init_prob must sum to 1.0")
     if np.any(init_prob < 0.0):
@@ -120,12 +132,12 @@ def sample_markov_process(length:int, init_prob, tran_prob):
     # Sample
     s = [np.nan] * length
     s[0] = np.random.choice(n_states, p=init_prob)
-    for t in range(1,length):
-        s[t] = np.random.choice(n_states, p=tran_prob[s[t-1],:])
+    for t in range(1, length):
+        s[t] = np.random.choice(n_states, p=tran_prob[s[t - 1], :])
     return s
 
 
-def sample_lengths(ave_len:int, num: int):
+def sample_lengths(ave_len: int, num: int):
     """Determin lengths of sequences by possion distribution.
 
     Args:
@@ -142,7 +154,8 @@ def sample_lengths(ave_len:int, num: int):
                     break
     return lengths
 
-def sample_multiple_markov_process(num:int, init_prob, tran_prob):
+
+def sample_multiple_markov_process(num: int, init_prob, tran_prob):
     """
     Sampling multiple Markov processes with given model paremeters.
 
@@ -153,14 +166,15 @@ def sample_multiple_markov_process(num:int, init_prob, tran_prob):
     """
     assert num > 0
     lengths = sample_lengths(10, num)
-    print('lengths=', lengths)
+    print("lengths=", lengths)
     x = []
     for _l in lengths:
         x1 = sample_markov_process(_l, init_prob, tran_prob)
         x.append(x1)
     return x
 
-def sampling_from_hmm(sequence_lengths, hmm:HMM):
+
+def sampling_from_hmm(sequence_lengths, hmm: HMM):
     """sample HMM output and its hidden states from given parameters
 
     Args:
@@ -174,10 +188,11 @@ def sampling_from_hmm(sequence_lengths, hmm:HMM):
         obs = []
         for s_t in states:
             # sample x from p(x|s[t])
-            x = np.random.choice(outdim_ids, p=hmm.obs_prob[s_t,:])
+            x = np.random.choice(outdim_ids, p=hmm.obs_prob[s_t, :])
             obs.append(x)
         out.append(obs)
     return states, out
+
 
 def save_sequences_with_blank(filename: str, sequences: list[np.ndarray]):
     """
@@ -195,7 +210,7 @@ def load_sequences_with_blank(filename: str):
     """
     sequences = []
     current = []
-    with open(filename, encoding='utf-8') as f:
+    with open(filename, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line == "":

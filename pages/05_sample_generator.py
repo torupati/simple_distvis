@@ -1,20 +1,29 @@
-import streamlit as st
-import numpy as np
-import pickle
 import io
+import pickle
 
-from src.hmm.sampler import generate_sample_parameter, generate_gmm_samples
+import numpy as np
+import streamlit as st
+
+from src.hmm.sampler import generate_gmm_samples, generate_sample_parameter
 
 st.title("GMM Sample Generator")
 
 # Input fields
-num_mixture = st.number_input("Number of mixtures", min_value=1, max_value=20, value=3, step=1)
-feature_dim = st.number_input("Feature dimension", min_value=1, max_value=10, value=2, step=1)
-n_sample = st.number_input("Number of samples", min_value=1, max_value=10000, value=100, step=1)
+num_mixture = st.number_input(
+    "Number of mixtures", min_value=1, max_value=20, value=3, step=1
+)
+feature_dim = st.number_input(
+    "Feature dimension", min_value=1, max_value=10, value=2, step=1
+)
+n_sample = st.number_input(
+    "Number of samples", min_value=1, max_value=10000, value=100, step=1
+)
 
 if st.button("Generate samples"):
     # Generate GMM parameters
-    weights, mean_vectors, covariances = generate_sample_parameter(num_mixture, feature_dim)
+    weights, mean_vectors, covariances = generate_sample_parameter(
+        num_mixture, feature_dim
+    )
     samples, labels = generate_gmm_samples(n_sample, weights, mean_vectors, covariances)
     # Save to session_state
     st.session_state["gmm_samples"] = {
@@ -38,9 +47,13 @@ if "gmm_samples" in st.session_state:
             st.write(f"Covariance matrix for mixture {k}:\n", covariances[k])
             eigvals = np.linalg.eigvalsh(covariances[k])
             if np.any(eigvals <= 0):
-                st.warning(f"Covariance matrix for mixture {k} is not positive definite. Eigenvalues: {eigvals}")
+                st.warning(
+                    f"Covariance matrix for mixture {k} is not positive definite. Eigenvalues: {eigvals}"
+                )
             else:
-                st.write(f"Covariance matrix for mixture {k} is positive definite. Eigenvalues: {eigvals}")
+                st.write(
+                    f"Covariance matrix for mixture {k} is positive definite. Eigenvalues: {eigvals}"
+                )
 
     st.write("Generated samples shape:", data["samples"].shape)
     st.write("First 5 samples:", data["samples"][:5])
@@ -57,38 +70,40 @@ if "gmm_samples" in st.session_state:
             label="Download samples (pickle)",
             data=buffer,
             file_name="gmm_samples.pkl",
-            mime="application/octet-stream"
+            mime="application/octet-stream",
         )
     elif file_format == "csv":
         csv_buffer = io.StringIO()
-        header = ",".join([f"feature_{i+1}" for i in range(data["samples"].shape[1])])
+        header = ",".join([f"feature_{i + 1}" for i in range(data["samples"].shape[1])])
         np.savetxt(
             csv_buffer,
             data["samples"],
             delimiter=",",
             header=f"#{header}",  # Add # at the beginning
-            comments=""
+            comments="",
         )
         st.download_button(
             label="Download samples (csv)",
             data=csv_buffer.getvalue(),
             file_name="gmm_samples.csv",
-            mime="text/csv"
+            mime="text/csv",
         )
     else:  # csv(with labels)
         csv_data = np.hstack([data["samples"], data["labels"].reshape(-1, 1)])
-        header = ",".join([f"feature_{i+1}" for i in range(data["samples"].shape[1])] + ["label"])
+        header = ",".join(
+            [f"feature_{i + 1}" for i in range(data["samples"].shape[1])] + ["label"]
+        )
         csv_buffer = io.StringIO()
         np.savetxt(
             csv_buffer,
             csv_data,
             delimiter=",",
             header=f"#{header}",  # Add # at the beginning
-            comments=""
+            comments="",
         )
         st.download_button(
             label="Download samples (csv)",
             data=csv_buffer.getvalue(),
             file_name="gmm_samples.csv",
-            mime="text/csv"
+            mime="text/csv",
         )

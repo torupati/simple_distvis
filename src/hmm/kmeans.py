@@ -3,6 +3,7 @@
 
 import logging
 from pathlib import Path
+
 import numpy as np
 
 from src.hmm.kmeans_plot import plot_data_with_centroid
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class KmeansCluster():
+class KmeansCluster:
     """
     Definition of K-means clustering model.
     Note that number of clusters is fixed after instance creation.
@@ -26,6 +27,7 @@ class KmeansCluster():
     In this case, get_alignment() method is used to get sample alignment
     to clusters.
     """
+
     COV_NONE = 0
     COV_FULL = 1
     COV_DIAG = 2
@@ -58,23 +60,25 @@ class KmeansCluster():
         self._K = K
         self._D = D
         self.Mu = np.random.randn(K, D)  # centroid
-        if kwargs.get('covariance_mode', 'diag') == 'diag':
+        if kwargs.get("covariance_mode", "diag") == "diag":
             self._cov_mode = KmeansCluster.COV_DIAG
             self.Sigma = np.ones((K, D))
-        elif kwargs['covariance_mode'] == 'full':
+        elif kwargs["covariance_mode"] == "full":
             self._cov_mode = KmeansCluster.COV_FULL
             self.Sigma = np.ones((K, D, D))
-        elif kwargs['covariance_mode'] == 'none':
+        elif kwargs["covariance_mode"] == "none":
             self._cov_mode = KmeansCluster.COV_NONE
             self.Sigma = None
         else:
-            raise ValueError(f'covariance mode is wrong. got {kwargs["covariance_mode"]}')
+            raise ValueError(
+                f"covariance mode is wrong. got {kwargs['covariance_mode']}"
+            )
 
         # define training variables
-        #print(kwargs.get('trainvars', 'outside') == 'outside')
-        if kwargs.get('trainvars', 'outside') == 'outside':
+        # print(kwargs.get('trainvars', 'outside') == 'outside')
+        if kwargs.get("trainvars", "outside") == "outside":
             self._train_mode = KmeansCluster.TRAIN_VAR_OUTSIDE
-        elif kwargs['trainvars'] == 'inside':
+        elif kwargs["trainvars"] == "inside":
             self._train_mode = KmeansCluster.TRAIN_VAR_INSIDE
             self._loss = 0.0
             self._X0 = np.zeros([K], dtype=np.uint32)
@@ -86,19 +90,21 @@ class KmeansCluster():
             elif self._cov_mode == KmeansCluster.COV_DIAG:
                 self._X2 = np.zeros([K, D])
         else:
-            raise ValueError(f'training variable mode is wrong. got {kwargs["trainvars"]}')
+            raise ValueError(
+                f"training variable mode is wrong. got {kwargs['trainvars']}"
+            )
 
-        if kwargs.get('dist_mode', 'linear') == 'linear':
+        if kwargs.get("dist_mode", "linear") == "linear":
             self._dist_mode = KmeansCluster.DISTANCE_LINEAR_SCALE
-        elif kwargs['dist_mode'] == 'log':
+        elif kwargs["dist_mode"] == "log":
             self._dist_mode = KmeansCluster.DISTANCE_LOG_SCALE
-        elif kwargs['dist_mode'] == 'kldiv':
+        elif kwargs["dist_mode"] == "kldiv":
             self._dist_mode = KmeansCluster.DISTANCE_KL_DIVERGENCE
         else:
-            raise ValueError(f'distance mode is wrong. got {kwargs["dist_mode"]}')
+            raise ValueError(f"distance mode is wrong. got {kwargs['dist_mode']}")
 
     @property
-    def K(self) -> int:
+    def num_clusters(self) -> int:
         """Number of clusters
 
         Returns:
@@ -117,15 +123,17 @@ class KmeansCluster():
 
     @property
     def DistanceType(self) -> str:
-        name_list =  {self.DISTANCE_LINEAR_SCALE: "linear", 
-                      self.DISTANCE_LOG_SCALE: "log",
-                      self.DISTANCE_KL_DIVERGENCE: "kldiv"}
+        name_list = {
+            self.DISTANCE_LINEAR_SCALE: "linear",
+            self.DISTANCE_LOG_SCALE: "log",
+            self.DISTANCE_KL_DIVERGENCE: "kldiv",
+        }
         return name_list[self._dist_mode]
 
     def __repr__(self):
-        return '{n} K:{k} D:{d}'.format(n=self.__class__.__name__,
-                                          k=self._K, d=self._D)\
-                + ' dist={d2}'.format(d2=self.DistanceType)
+        return "{n} K:{k} D:{d}".format(
+            n=self.__class__.__name__, k=self.K, d=self.D
+        ) + " dist={d2}".format(d2=self.DistanceType)
 
     @property
     def covariance_mode(self):
@@ -133,7 +141,7 @@ class KmeansCluster():
 
     @property
     def train_vars_mode(self) -> str:
-        return list(["outside", 'inside'])[self._train_mode]
+        return list(["outside", "inside"])[self._train_mode]
 
     def distortion_measure(self, x: np.ndarray, r: np.ndarray) -> float:
         """Calculate distortion measure.
@@ -152,14 +160,22 @@ class KmeansCluster():
         for n in range(n_sample):
             dist = None
             if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
-                dist = [sum(v*v for v in x[n, :] - self.Mu[k, :]) for k in range(self._K)]
+                dist = [
+                    sum(v * v for v in x[n, :] - self.Mu[k, :]) for k in range(self._K)
+                ]
             elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
-                dist = [sum(v*v for v in np.log(x[n, :]) - np.log(self.Mu[k, :])) for k in range(self._K)]
+                dist = [
+                    sum(v * v for v in np.log(x[n, :]) - np.log(self.Mu[k, :]))
+                    for k in range(self._K)
+                ]
             elif self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
-                dist = [KmeansCluster.KL_divergence(x[n, :], self.Mu[k, :]) for k in range(self._K)]
+                dist = [
+                    KmeansCluster.KL_divergence(x[n, :], self.Mu[k, :])
+                    for k in range(self._K)
+                ]
             if dist is not None:
                 J = J + np.dot(r[n, :], dist)
-        return J/n_sample
+        return J / n_sample
 
     def get_alignment(self, x: np.ndarray) -> np.ndarray:
         """
@@ -171,23 +187,32 @@ class KmeansCluster():
             r (ndarray): sample alignment to clusters (N,K)
         """
         if len(x.shape) != 2:
-            raise InputSampleError(f"input shape is wrong {x.shape=}")
+            raise ValueError(f"input shape is wrong {x.shape=}")
         N = x.shape[0]
         r = np.zeros((N, self._K), dtype=np.uint16)
         for n in range(N):
             costs = None
             if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
-                costs = [sum([v*v for v in (x[n, :] - self.Mu[k, :])]) for k in range(self._K)]
+                costs = [
+                    sum([v * v for v in (x[n, :] - self.Mu[k, :])])
+                    for k in range(self._K)
+                ]
             elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
-                costs = [sum([v*v for v in (np.log(x[n, :]) - np.log(self.Mu[k, :]))]) for k in range(self._K)]
+                costs = [
+                    sum([v * v for v in (np.log(x[n, :]) - np.log(self.Mu[k, :]))])
+                    for k in range(self._K)
+                ]
             elif self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
-                costs = [KmeansCluster.KL_divergence(x[n, :], self.Mu[k, :]) for k in range(self._K)]
+                costs = [
+                    KmeansCluster.KL_divergence(x[n, :], self.Mu[k, :])
+                    for k in range(self._K)
+                ]
             if costs is not None:
                 r[n, np.argmin(costs)] = 1
-            #r[n, np.argmin([ sum(v*v for v in x[n, :] - self.Mu[k, :]) for k in range(self._K)])] = 1
-            r[n, :] = r[n,:]/r[n,:].sum()
-            #wk = [(x[n, 0] - mu[k, 0])**2 + (x[n, 1] - mu[k, 1])**2 for k in range(K)]
-            #r[n, argmin(wk)] = 1
+            # r[n, np.argmin([ sum(v*v for v in x[n, :] - self.Mu[k, :]) for k in range(self._K)])] = 1
+            r[n, :] = r[n, :] / r[n, :].sum()
+            # wk = [(x[n, 0] - mu[k, 0])**2 + (x[n, 1] - mu[k, 1])**2 for k in range(K)]
+            # r[n, argmin(wk)] = 1
         return r
 
     def PushSample(self, x: np.ndarray) -> (int, float):
@@ -201,35 +226,39 @@ class KmeansCluster():
             float: loss of this sample
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise NotImplementedError('Only TRAIN_VAR_INSIDE is supported now.')
+            raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
         if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
-            costs = [sum([v*v for v in (x - self.Mu[k, :])]) for k
-                     in range(self._K)]
+            costs = [sum([v * v for v in (x - self.Mu[k, :])]) for k in range(self._K)]
         elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
-            costs = [sum([v*v for v in (np.log(x) - np.log(self.Mu[k, :]))])
-                     for k in range(self._K)]
+            costs = [
+                sum([v * v for v in (np.log(x) - np.log(self.Mu[k, :]))])
+                for k in range(self._K)
+            ]
         elif self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
-            costs = [KmeansCluster.KL_divergence(x, self.Mu[k, :]) for k
-                     in range(self._K)]
+            costs = [
+                KmeansCluster.KL_divergence(x, self.Mu[k, :]) for k in range(self._K)
+            ]
         else:
             raise ValueError("wrong distance model")
         if np.isinf(costs).any():
             if self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
-                raise ValueError(f'log(x)={np.log(x)}'
-                                + f' log(mu)={np.log(self.Mu)} costs={costs}')
-            raise RuntimeError(f'wrong input in distance computation x={x} mu={self.Mu}'
-                      + f'costs={costs}')
+                raise ValueError(
+                    f"log(x)={np.log(x)}" + f" log(mu)={np.log(self.Mu)} costs={costs}"
+                )
+            raise RuntimeError(
+                f"wrong input in distance computation x={x} mu={self.Mu}"
+                + f"costs={costs}"
+            )
 
         k_min = np.argmin(costs)
         self._loss += costs[k_min]
         self._X0[k_min] += 1
         self._X1[k_min, :] += x
         if self._cov_mode == KmeansCluster.COV_DIAG:
-            self._X2[k_min, :] = (x * x)
+            self._X2[k_min, :] = x * x
         elif self._cov_mode == KmeansCluster.COV_FULL:
             # NOT checked.
-            self._X2[k_min, :, :] = (x.reshape(self._D, 1)
-                                     * x.reshape(1, self._D))
+            self._X2[k_min, :, :] = x.reshape(self._D, 1) * x.reshape(1, self._D)
         return k_min, costs[k_min]
 
     def ClearTrainingVariables(self):
@@ -239,7 +268,7 @@ class KmeansCluster():
             Exception: invalid training setting
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise NotImplementedError('Only TRAIN_VAR_INSIDE is supported now.')
+            raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
         self._loss = 0.0
         self._X0 = np.zeros([self._K])
         self._X1 = np.zeros([self._K, self._D])
@@ -261,13 +290,12 @@ class KmeansCluster():
             _type_: _description_
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise NotImplementedError('Only TRAIN_VAR_INSIDE is supported now.')
+            raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
         for k in range(self._K):
             if self._X0[k] == 0:
                 continue
             self.Mu[k, :] = self._X1[k, :] / self._X0[k]
-            if self._cov_mode in [KmeansCluster.COV_FULL,
-                                  KmeansCluster.COV_DIAG]:
+            if self._cov_mode in [KmeansCluster.COV_FULL, KmeansCluster.COV_DIAG]:
                 self.Sigma = self._X2 / self._X0[k]
             if self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
                 self.Mu[k, :] = self.Mu[k, :] / np.sum(self.Mu[k, :])
@@ -300,6 +328,7 @@ class KmeansCluster():
         _kl_div = np.sum(_x * xy_diff)
         return _kl_div
 
+
 def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     """Run k-means clustering.
 
@@ -307,7 +336,7 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
         X (np.ndarray): vector samples (N, D)
         mu_init (np.ndarray): initial mean vectors(K, D)
         max_it (int, optional): Iteration steps. Defaults to 20.
-        
+
         kwargs:
             dist_mode (str): distance mode. "linear"(default), "log", "kldiv"
             plot_ckpt (bool): if True, plot intermediate result at each iteration step
@@ -321,13 +350,12 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     if Dim != Dim2:
         raise ValueError(f"Wrong dim. X(N,D={Dim}), mu_init(M, D={Dim2})")
 
-    max_it = kwargs.get('max_it', 20)
-    #save_ckpt = kwargs.get('save_ckpt', False)
-    dist_mode = kwargs.get('dist_mode', 'linear')
+    max_it = kwargs.get("max_it", 20)
+    # save_ckpt = kwargs.get('save_ckpt', False)
+    dist_mode = kwargs.get("dist_mode", "linear")
 
-    kmeansparam = KmeansCluster(K, Dim, trainvars='inside',
-                                dist_mode=dist_mode)
-    logger.info('initialize: %s', str(kmeansparam))
+    kmeansparam = KmeansCluster(K, Dim, trainvars="inside", dist_mode=dist_mode)
+    logger.info("initialize: %s", str(kmeansparam))
     kmeansparam.Mu = mu_init
     cost_history = []
     align_history = []
@@ -340,34 +368,44 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
         # Update parameters(centroids)
         loss, align_dist = kmeansparam.UpdateParameters()
 
-        logger.info("iteration %d loss %f", it, loss/N)
+        logger.info("iteration %d loss %f", it, loss / N)
         cost_history.append(loss)
         align_history.append(align_dist)
 
         # Convergence validation
         if len(cost_history) > 1:
             cost_diff = cost_history[-2] - cost_history[-1]
-            align_diff = [x - y for x, y in
-                          zip(align_history[-1], align_history[-2])]
+            align_diff = [x - y for x, y in zip(align_history[-1], align_history[-2])]
             assert cost_diff >= 0.0
-            logger.debug('iteration step=%d cost_diff = %f'
-                            + 'alignment change=%s',
-                            it, cost_diff, align_diff)
-            if 0.0 <= cost_diff < 1.0E-6 and np.sum(align_diff) < 1.0E-6:
-                logger.info('converged at iteration %d, alignment not changed', it)
+            logger.debug(
+                "iteration step=%d cost_diff = %f" + "alignment change=%s",
+                it,
+                cost_diff,
+                align_diff,
+            )
+            if 0.0 <= cost_diff < 1.0e-6 and np.sum(align_diff) < 1.0e-6:
+                logger.info("converged at iteration %d, alignment not changed", it)
                 break
-        if kwargs.get('plot_ckpt', False):
+        if kwargs.get("plot_ckpt", False):
             import matplotlib.pyplot as plt
+
             fig, ax = plt.subplots(1, 1, figsize=(6, 6))
             r = kmeansparam.get_alignment(X)
-            plot_data_with_centroid(ax=ax, x=X, r=r, mu=kmeansparam.Mu, kmeans_param_ref={})
-            fig.suptitle('K-means iteration {it} loss={loss:.2f}'.format(it=it, loss=loss/N))
-            fig.savefig(f'kmeans_iter{it:03d}.png')
+            plot_data_with_centroid(
+                ax=ax, x=X, r=r, mu=kmeansparam.Mu, kmeans_param_ref={}
+            )
+            fig.suptitle(
+                "K-means iteration {it} loss={loss:.2f}".format(it=it, loss=loss / N)
+            )
+            fig.savefig(f"kmeans_iter{it:03d}.png")
             plt.close(fig)
 
     return kmeansparam, cost_history
 
-def pickle_kmeans_and_data_by_dict(out_file: Path, kmeans_param_dict: dict, X: np.ndarray):
+
+def pickle_kmeans_and_data_by_dict(
+    out_file: Path, kmeans_param_dict: dict, X: np.ndarray
+):
     """
     Serializes and saves KMeans clustering parameters and data to a file.
 
@@ -390,7 +428,13 @@ def pickle_kmeans_and_data_by_dict(out_file: Path, kmeans_param_dict: dict, X: n
         IOError: If there is an issue writing to the specified file.
     """
     import pickle
-    with open(out_file, 'wb') as f:
-        pickle.dump({'model_param': kmeans_param_dict,
-                    'sample': X,
-                    'model_type': 'KmeansClustering'}, f)
+
+    with open(out_file, "wb") as f:
+        pickle.dump(
+            {
+                "model_param": kmeans_param_dict,
+                "sample": X,
+                "model_type": "KmeansClustering",
+            },
+            f,
+        )

@@ -1,6 +1,6 @@
-import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import streamlit as st
 
 st.title("Square Error Decomposition: Mean Square = (Mean)$^2$ + Variance")
 
@@ -31,10 +31,10 @@ st.write(f"Difference: {abs(mse - sum_formula):.3e}")
 
 # Plot histogram
 fig, ax = plt.subplots(figsize=(8, 4))
-ax.hist(x, bins=30, color='skyblue', edgecolor='k', alpha=0.7, label='Samples')
-ax.axvline(mean_x, color='red', linestyle='--', label=f"Mean = {mean_x:.2f}")
-ax.axvline(mean_x + np.sqrt(var_x), color='green', linestyle=':', label=f"Mean + Std")
-ax.axvline(mean_x - np.sqrt(var_x), color='green', linestyle=':', label=f"Mean - Std")
+ax.hist(x, bins=30, color="skyblue", edgecolor="k", alpha=0.7, label="Samples")
+ax.axvline(mean_x, color="red", linestyle="--", label=f"Mean = {mean_x:.2f}")
+ax.axvline(mean_x + np.sqrt(var_x), color="green", linestyle=":", label="Mean + Std")
+ax.axvline(mean_x - np.sqrt(var_x), color="green", linestyle=":", label="Mean - Std")
 ax.set_title("Histogram of Samples")
 ax.set_xlabel("x")
 ax.set_ylabel("Frequency")

@@ -160,10 +160,27 @@ uv run pytest tests/test_kmeans.py
 
 
 ```shell
-# To disable capture of stdout, ```--cpature=no``` or ```-s``` can be used.
+# To disable capture of stdout, --cpature=no or -s can be used.
 uv run pytest --cov -v --capture=no
 # show print statement or logging output
 uv run pytest --cov -v --capture=sys
 # show all
 uv run pytest --cov -v --tb=short -s
+```
+
+## Style check
+
+```shell
+uv add ruff --dev
+```
+
+```shell
+# check
+uv run ruff check .
+
+# fix
+uv run ruff check --fix .
+
+# format
+uv run ruff format .
 ```

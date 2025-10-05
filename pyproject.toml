@@ -36,4 +36,22 @@ addopts = [
 [dependency-groups]
 dev = [
     "pytest-cov>=7.0.0",
+    "ruff>=0.13.3",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

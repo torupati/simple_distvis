@@ -1,26 +1,27 @@
 # EM algorithm implementation to train Gaussian Mixture Models.
 # Reference: "Pattern Recognition and Machine Learning" by C. M. Bishop, Chapter 9
 
-import numpy as np
+import logging
 import pickle
-from numpy import ndarray
-from numpy import array, dot, sum
-from src.hmm.kmeans_plot import plot_data_with_centroid
-from scipy.stats import multivariate_normal
 
+import numpy as np
+from numpy import array, dot, ndarray, sum
+from scipy.stats import multivariate_normal
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-import logging
+
+from src.hmm.kmeans_plot import plot_data_with_centroid
 
 logger = logging.getLogger(__name__)
 
-class GaussianMixtureModel():
+
+class GaussianMixtureModel:
     """Definition of Gaussian Mixture Model (GMM)
 
     Update with given training data by EM algorithm is implemented.
     """
 
-    def __init__(self, M:int, D:int):
+    def __init__(self, M: int, D: int):
         """
         Each Gaussian is initialized as zero means, unit covariance.
         Weight is initailized as equal probability.
@@ -35,8 +36,8 @@ class GaussianMixtureModel():
         self.Mu = np.random.randn(M, D)
         self.Sigma = np.zeros((M, D, D))
         for m in range(self._M):
-            self.Sigma[m,:,:] = np.eye(D)
-        self.Pi = np.ones(M) / M # equal probability for initial condition
+            self.Sigma[m, :, :] = np.eye(D)
+        self.Pi = np.ones(M) / M  # equal probability for initial condition
 
     @property
     def M(self) -> int:
@@ -55,12 +56,13 @@ class GaussianMixtureModel():
             int: dimension of input data
         """
         return self._D
-    
+
     def __repr__(self):
-        return '{n} (M={k} D={d})'.format(n=self.__class__.__name__, k=self._M, d= self._D)
+        return "{n} (M={k} D={d})".format(
+            n=self.__class__.__name__, k=self._M, d=self._D
+        )
 
-
-    def probability(self, x:ndarray) -> ndarray:
+    def probability(self, x: ndarray) -> ndarray:
         """Calculate probability of this GMM at given sample points
 
         Args:
@@ -69,8 +71,10 @@ class GaussianMixtureModel():
         Returns:
             ndarray: probability density of GMM. Note this is NOT in log scale.
         """
-        return sum(self.Pi[k] * multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(x) \
-            for k in range(self._M))
+        return sum(
+            self.Pi[k] * multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(x)
+            for k in range(self._M)
+        )
 
     def log_likelihood(self, x: np.ndarray) -> float:
         """Calculate log-likelihood of vectors.
@@ -82,9 +86,11 @@ class GaussianMixtureModel():
             float: Total log-likelihood
         """
         N, D = x.shape
-        y = np.zeros((N, self._M)) #keep all Gaussian pdf (not smart)
+        y = np.zeros((N, self._M))  # keep all Gaussian pdf (not smart)
         for k in range(self._M):
-            y[:, k] = multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(x)  # (K,N)
+            y[:, k] = multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(
+                x
+            )  # (K,N)
         lh = 0
         for n in range(N):
             wk = 0
@@ -93,7 +99,7 @@ class GaussianMixtureModel():
             lh = lh + np.log(wk)
         return lh
 
-    def update_e_step(self, x:ndarray) -> (np.ndarray, float):
+    def update_e_step(self, x: ndarray) -> (np.ndarray, float):
         """Calculate gamma of GMM (Expectation step of GMM training)
 
         Args:
@@ -106,20 +112,27 @@ class GaussianMixtureModel():
         N = x.shape[0]
         # caluclate P(x[n], k) = P(k)P(x[n]|k) and hold all as array (n,m)
         try:
-            gam = array([ self.Pi[m] * multivariate_normal(self.Mu[m, :], self.Sigma[m,:,:], allow_singular=True).pdf(x) \
-                for m in range(self._M)]).transpose() # (N,M)
+            gam = array(
+                [
+                    self.Pi[m]
+                    * multivariate_normal(
+                        self.Mu[m, :], self.Sigma[m, :, :], allow_singular=True
+                    ).pdf(x)
+                    for m in range(self._M)
+                ]
+            ).transpose()  # (N,M)
         except np.linalg.LinAlgError as e:
             print(self.Pi)
             print(self.Sigma)
             raise e
-        llh = 0.0 # log likelihood of all training data
+        llh = 0.0  # log likelihood of all training data
         for n in range(N):
-            _s = sum(gam[n,:]) # P(x[n]) = sum_k P(k,x[n])
-            gam[n,:] = gam[n,:] / _s
+            _s = sum(gam[n, :])  # P(x[n]) = sum_k P(k,x[n])
+            gam[n, :] = gam[n, :] / _s
             llh += np.log(_s)
         return gam, llh
 
-    def update_m_step(self, x:ndarray, gamma:ndarray) -> bool:
+    def update_m_step(self, x: ndarray, gamma: ndarray) -> bool:
         """Update parameter of GMM with given allocation.
 
         Args:
@@ -129,44 +142,46 @@ class GaussianMixtureModel():
         self.Pi = sum(gamma, axis=0) / sum(gamma)
         self.Mu = dot(gamma.transpose(), x)
         for m in range(self.M):
-            if sum(gamma[:,m]) < 1.0E-10:
+            if sum(gamma[:, m]) < 1.0e-10:
                 continue
-            self.Mu[m,:] = self.Mu[m,:] / sum(gamma[:,m])
-            #self.Sigma = np.zeros((M, D, D))
-        #for m in range(self._M):
-        #    if sum(gamma[:,m]) < 1.0E-5:
-        #        continue
+            self.Mu[m, :] = self.Mu[m, :] / sum(gamma[:, m])
+            # self.Sigma = np.zeros((M, D, D))
+            # for m in range(self._M):
+            #    if sum(gamma[:,m]) < 1.0E-5:
+            #        continue
             for n in range(N):
-                wk = x - self.Mu[m, :] # distance between x and m-th Gaussian's mean
+                wk = x - self.Mu[m, :]  # distance between x and m-th Gaussian's mean
                 wk = wk[n, :, np.newaxis]
-                self.Sigma[m, :, :] = self.Sigma[m, :, :] + gamma[n, m] * np.dot(wk, wk.T)
-            #print(self.Sigma[m,:,:])
+                self.Sigma[m, :, :] = self.Sigma[m, :, :] + gamma[n, m] * np.dot(
+                    wk, wk.T
+                )
+            # print(self.Sigma[m,:,:])
             tmp_sig = self.Sigma[m, :, :] / np.sum(gamma[:, m])
-            if not (tmp_sig > 1E4).any():
+            if not (tmp_sig > 1e4).any():
                 self.Sigma[m, :, :] = tmp_sig
             else:
-                print('too large: self.Sigma=', self.Sigma)
-                print('gamma = ', np.sum(gamma[:,m]), ' covariance is not updated.')
-                #input()
+                print("too large: self.Sigma=", self.Sigma)
+                print("gamma = ", np.sum(gamma[:, m]), " covariance is not updated.")
+                # input()
         return True
 
     def split_Gaussian(self):
         """
         Not implemented yet.
         """
-        raise NotImplementedError('not implemented')
-        #gauss_vars = {}
-        #for m in self._M:
+        raise NotImplementedError("not implemented")
+        # gauss_vars = {}
+        # for m in self._M:
         #    var = np.sum(np.diag(self.Sigma[m,:,:]))
         #    gauss_vars[m] = var
-        #max_m = max(guass_vars, key=gauss_vars.get)
-        #self._M += 1
+        # max_m = max(guass_vars, key=gauss_vars.get)
+        # self._M += 1
         #
-        #self.Mu = np.random.randn(self._M, self._D)
-        #self.Sigma = np.zeros((self._M, self._D, self._D))
+        # self.Mu = np.random.randn(self._M, self._D)
+        # self.Sigma = np.zeros((self._M, self._D, self._D))
 
 
-def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int =12, **kwargs):
+def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int = 12, **kwargs):
     """Train GMM
 
     Args:
@@ -180,34 +195,49 @@ def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int =12, **kwarg
     N = X.shape[0]
     loglikelihood_history = []  # distortion measure
     with logging_redirect_tqdm(loggers=[logger]):
-        pbar = tqdm(range(max_it), desc=f"gmm-train(M={gmm.M})", postfix="postfix", ncols=80)
+        pbar = tqdm(
+            range(max_it), desc=f"gmm-train(M={gmm.M})", postfix="postfix", ncols=80
+        )
         for it in pbar:
-    #for it in range(0, max_it):
-    #        _ll = gmm.log_likelihood(X)
+            # for it in range(0, max_it):
+            #        _ll = gmm.log_likelihood(X)
             _gamma, _ll = gmm.update_e_step(X)
             loglikelihood_history.append(_ll)
             gmm.update_m_step(X, _gamma)
-            #pbar.write('GMM EM training: step={_i} E[log(P(X)]={_l}'.format(_i=len(loglikelihood_history), _l=_ll/N))
-            logger.info('GMM EM training: step={_i} E[log(P(X)]={_l}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+            # pbar.write('GMM EM training: step={_i} E[log(P(X)]={_l}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+            logger.info(
+                "GMM EM training: step={_i} E[log(P(X)]={_l}".format(
+                    _i=len(loglikelihood_history), _l=_ll / N
+                )
+            )
             if kwargs.get("plot_ckpt", False) and gmm.D >= 2:
                 import matplotlib.pyplot as plt
-                fig, ax = plt.subplots(1,1, figsize=(6,6))
+
+                fig, ax = plt.subplots(1, 1, figsize=(6, 6))
                 plot_data_with_centroid(ax, X, _gamma, gmm.Mu)
-                out_pngfile = "gmm-step{it:03d}.png".format(it=len(loglikelihood_history))
-                fig.suptitle('GMM EM training: step={_i} E[log(P(X)]={_l:.2f}'.format(_i=len(loglikelihood_history), _l=_ll/N))
+                out_pngfile = "gmm-step{it:03d}.png".format(
+                    it=len(loglikelihood_history)
+                )
+                fig.suptitle(
+                    "GMM EM training: step={_i} E[log(P(X)]={_l:.2f}".format(
+                        _i=len(loglikelihood_history), _l=_ll / N
+                    )
+                )
                 fig.savefig(out_pngfile)
-                logger.info('save PNG file: %s', out_pngfile)
+                logger.info("save PNG file: %s", out_pngfile)
     return gmm, loglikelihood_history
 
-def load_from_pickle_file(input_file:str):
-    with open(input_file, 'rb') as f:
+
+def load_from_pickle_file(input_file: str):
+    with open(input_file, "rb") as f:
         indata = pickle.load(f)
-        #print(indata)
-    X = indata['sample'] # data points.
-    Param = indata['model_param'] # model parameters.
+        # print(indata)
+    X = indata["sample"]  # data points.
+    Param = indata["model_param"]  # model parameters.
     return X, Param
 
-def gmm_em_training_mixutre_scan(X, max_mixnum:int = 10):
+
+def gmm_em_training_mixutre_scan(X, max_mixnum: int = 10):
     N, D = X.shape[0], X.shape[1]
 
     mixnum_likelihood = {}
@@ -221,19 +251,30 @@ def gmm_em_training_mixutre_scan(X, max_mixnum:int = 10):
             gmm.Mu[m, :] = X.mean() + np.dot(L, np.random.randn(D))
             gmm.Sigma[m, :, :] = np.eye(D)
         gmm, loglikelihood_history = train_gmm(gmm, X, max_it=100)
-        logger.info('GMM EM training: mixture={i} E[log(P(X)]={_l}'.format(i=mix_num, _l=loglikelihood_history[-1]/N))
+        logger.info(
+            "GMM EM training: mixture={i} E[log(P(X)]={_l}".format(
+                i=mix_num, _l=loglikelihood_history[-1] / N
+            )
+        )
         mixnum_likelihood[mix_num] = loglikelihood_history[-1]
     print(mixnum_likelihood)
     return mixnum_likelihood
 
+
 # ---
-import matplotlib.pyplot as plt
+
 
 def plot_loglikelihood_history(ax, loglikelihood_history):
-    ax.plot(range(0, len(loglikelihood_history)), loglikelihood_history, color='k', linestyle='-', marker='o')
-    ax.set_xlim([0,len(loglikelihood_history)])
+    ax.plot(
+        range(0, len(loglikelihood_history)),
+        loglikelihood_history,
+        color="k",
+        linestyle="-",
+        marker="o",
+    )
+    ax.set_xlim([0, len(loglikelihood_history)])
     ax.set_ylabel("log liklihood")
     ax.set_xlabel("iteration step")
-    #plt.ylim([40, 80])
+    # plt.ylim([40, 80])
     ax.grid(True)
     return ax

@@ -1,6 +1,6 @@
-import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import streamlit as st
 
 st.title("2D Square Error Decomposition: Mean Square = (Mean)$^2$ + Variance")
 
@@ -41,30 +41,42 @@ st.write(f"Difference (dim 2): {abs(mse[1] - sum_formula[1]):.3e}")
 # Plot histogram for each dimension and scatter
 fig, axs = plt.subplots(1, 3, figsize=(18, 4))
 
-axs[0].hist(x[:,0], bins=30, color='skyblue', edgecolor='k', alpha=0.7, label='Samples dim 1')
-axs[0].axvline(mean_x[0], color='red', linestyle='--', label=f"Mean = {mean_x[0]:.2f}")
-axs[0].axvline(mean_x[0] + np.sqrt(var_x[0]), color='green', linestyle=':', label=f"Mean + Std")
-axs[0].axvline(mean_x[0] - np.sqrt(var_x[0]), color='green', linestyle=':', label=f"Mean - Std")
+axs[0].hist(
+    x[:, 0], bins=30, color="skyblue", edgecolor="k", alpha=0.7, label="Samples dim 1"
+)
+axs[0].axvline(mean_x[0], color="red", linestyle="--", label=f"Mean = {mean_x[0]:.2f}")
+axs[0].axvline(
+    mean_x[0] + np.sqrt(var_x[0]), color="green", linestyle=":", label="Mean + Std"
+)
+axs[0].axvline(
+    mean_x[0] - np.sqrt(var_x[0]), color="green", linestyle=":", label="Mean - Std"
+)
 axs[0].set_title("Histogram of Samples (dim 1)")
 axs[0].set_xlabel("x₁")
 axs[0].set_ylabel("Frequency")
 axs[0].legend()
 
-axs[1].hist(x[:,1], bins=30, color='orange', edgecolor='k', alpha=0.7, label='Samples dim 2')
-axs[1].axvline(mean_x[1], color='red', linestyle='--', label=f"Mean = {mean_x[1]:.2f}")
-axs[1].axvline(mean_x[1] + np.sqrt(var_x[1]), color='green', linestyle=':', label=f"Mean + Std")
-axs[1].axvline(mean_x[1] - np.sqrt(var_x[1]), color='green', linestyle=':', label=f"Mean - Std")
+axs[1].hist(
+    x[:, 1], bins=30, color="orange", edgecolor="k", alpha=0.7, label="Samples dim 2"
+)
+axs[1].axvline(mean_x[1], color="red", linestyle="--", label=f"Mean = {mean_x[1]:.2f}")
+axs[1].axvline(
+    mean_x[1] + np.sqrt(var_x[1]), color="green", linestyle=":", label="Mean + Std"
+)
+axs[1].axvline(
+    mean_x[1] - np.sqrt(var_x[1]), color="green", linestyle=":", label="Mean - Std"
+)
 axs[1].set_title("Histogram of Samples (dim 2)")
 axs[1].set_xlabel("x₂")
 axs[1].set_ylabel("Frequency")
 axs[1].legend()
 
-axs[2].scatter(x[:,0], x[:,1], alpha=0.6, color='purple', edgecolor='k')
+axs[2].scatter(x[:, 0], x[:, 1], alpha=0.6, color="purple", edgecolor="k")
 axs[2].set_title("Scatter Plot of Samples")
 axs[2].set_xlabel("x₁")
 axs[2].set_ylabel("x₂")
-axs[2].axvline(mean_x[0], color='red', linestyle='--', alpha=0.5)
-axs[2].axhline(mean_x[1], color='red', linestyle='--', alpha=0.5)
+axs[2].axvline(mean_x[0], color="red", linestyle="--", alpha=0.5)
+axs[2].axhline(mean_x[1], color="red", linestyle="--", alpha=0.5)
 
 plt.tight_layout()
 st.pyplot(fig)
