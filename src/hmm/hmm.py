@@ -197,19 +197,26 @@ class HMM:
 
     def forward_algorithm(self, obsprob) -> (np.ndarray, np.ndarray):
         """HMM forward algorithm
+        Compute forward variable alpha and scaling factor alpha_scale
+        in linear scale (not log scale).
+
         alpha[t,s] = P(s[t]|x[1],...,x[t])
-        alpha_scale[t] = Sum_s[t] P(x[1],...,x[t], s[t])
+        alpha_scale[t] = Sum_t s[t] P(x[1],...,x[t], s[t])
 
         Args:
-            obsprob (_type_): observation probabilities at time t, state s
+            obsprob (np.ndarray): observation probabilities at time t, state s
+        Returns:
+            _alpha (np.ndarray): forward variable, shape (T,M)
+            _alpha_scale (np.ndarray): scaling factor, shape (T,)
         """
         T, _M = obsprob.shape
         assert _M == self._M
         _alpha_scale = np.ones(T) * np.nan
         _alpha = np.zeros((T, self._M), dtype=float)  # linear scale, not log scale
+        # alpha[t=0,s] = pi[s] * b(x[t=0],s)
         _alpha[0, :] = (
             self.init_state * obsprob[0, :]
-        )  # alpha[t=0,s] = pi[s] * b(x[t=0],s)
+        )
         _alpha_scale[0] = _alpha[0, :].sum()
         _alpha[0, :] = _alpha[0, :] / _alpha_scale[0]
         for t in range(1, T):  # for each time step t = 1, ..., T-1
@@ -219,7 +226,7 @@ class HMM:
                     _alpha[t, i] += (
                         _alpha[t - 1, _i0] * self.state_tran[_i0, i] * obsprob[t, i]
                     )
-            #            _alpha[t,:] = (_alpha[t-1,:] @ self.state_tran) * _obsprob[t,:]
+                # _alpha[t,:] = (_alpha[t-1,:] @ self.state_tran) * _obsprob[t,:]
             _alpha_scale[t] = _alpha[t, :].sum()
             _alpha[t, :] = _alpha[t, :] / _alpha_scale[t]
             # P(s[t]=s | X[t]=x[t], S)
@@ -339,7 +346,6 @@ class HMM:
             eps  # if probability is lower then eps, set eps to void log(0)
         )
         self.init_state = _init_state
-        # print('self._state_tran_stat=', self._state_tran_stat)
         for m in range(self._M):  # normalize each state
             if sum(self._state_tran_stat[m, :]) > 0.0:
                 self.state_tran[m, :] = self._state_tran_stat[m, :] / sum(
@@ -347,7 +353,6 @@ class HMM:
                 )
             if sum(self._obs_count[m, :]) > 0.0:
                 self.obs_prob[m, :] = self._obs_count[m, :] / sum(self._obs_count[m, :])
-        # print('self.state_tran_stat=', self.state_tran)
 
         # reset training variables
         self._ini_state_stat = np.zeros(self._M)
