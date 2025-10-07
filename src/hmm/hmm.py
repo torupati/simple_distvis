@@ -431,9 +431,17 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit: int = 100) -> dict:
         if _save_model and itr_count % 30 == 0:
             ckpt_file = path.join(outdir, f"hmm_checkpoint_{itr_count:06d}.ckpt")
             with open(ckpt_file, "wb") as f:
+                # todo: save model as dict
+                hmm_param_dict = {
+                    "init_state": hmm.init_state,
+                    "state_tran": hmm.state_tran,
+                    "obs_prob": hmm.obs_prob,
+                    "n_state": hmm.M,
+                    "n_obs": hmm.D,
+                    }
                 pickle.dump(
                     {
-                        "model": hmm,
+                        "model": hmm_param_dict,
                         "model_type": "HMM",
                         "total_likelihood": total_likelihood,
                         "total_sequence_num": len(obss_seqs),
@@ -445,7 +453,6 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit: int = 100) -> dict:
                 print(ckpt_file)
 
         # print('------ after Baum welch trianing ------')
-        # print(f'hmm={hmm}')
         if itr_count > 0:
             assert prev_likelihood <= total_likelihood
         prev_likelihood = total_likelihood
