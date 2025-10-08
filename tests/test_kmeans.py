@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from hmm.kmeans import KmeansCluster
+from src.hmm.kmeans import kmeans_clustering
 
 
 class TestKmeansCluster:
@@ -38,3 +39,24 @@ def test_kmeans_constructor():
         _ = KmeansCluster(10, 10, covariance_mode="foofoo")
     except ValueError as e:
         print(e)
+
+
+def test_kmeans_fit_predict():
+    np.random.seed(0)
+    n_samples = 300
+    n_features = 5
+    n_clusters = 3
+    X = np.random.rand(n_samples, n_features)
+    print(f"{X.shape=}")
+
+    mu_init = np.random.rand(n_clusters, n_features)
+    kmeans_param, cost_history = kmeans_clustering(X, mu_init)
+    for i, c in enumerate(cost_history):
+        print(f"itr={i} cost={c}")
+        assert isinstance(c, float)
+        assert c >= 0
+        if i > 1:
+            assert cost_history[i] <= cost_history[i - 1]
+    #labels = kmeans.predict(X)
+    #assert labels.shape == (n_samples,)
+    #assert set(labels) <= set(range(n_clusters))

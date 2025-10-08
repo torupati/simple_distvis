@@ -57,7 +57,6 @@ class KmeansCluster:
         If you want to change the number of clusters, new instance with desired
         cluster numbers should be created.
         """
-        self._K = K
         self._D = D
         self.Mu = np.random.randn(K, D)  # centroid
         if kwargs.get("covariance_mode", "diag") == "diag":
@@ -132,7 +131,7 @@ class KmeansCluster:
 
     def __repr__(self):
         return "{n} K:{k} D:{d}".format(
-            n=self.__class__.__name__, k=self.K, d=self.D
+            n=self.__class__.__name__, k=self.num_clusters, d=self.D
         ) + " dist={d2}".format(d2=self.DistanceType)
 
     @property
@@ -161,17 +160,17 @@ class KmeansCluster:
             dist = None
             if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
                 dist = [
-                    sum(v * v for v in x[n, :] - self.Mu[k, :]) for k in range(self._K)
+                    sum(v * v for v in x[n, :] - self.Mu[k, :]) for k in range(self.num_clusters)
                 ]
             elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
                 dist = [
                     sum(v * v for v in np.log(x[n, :]) - np.log(self.Mu[k, :]))
-                    for k in range(self._K)
+                    for k in range(self.num_clusters)
                 ]
             elif self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
                 dist = [
                     KmeansCluster.KL_divergence(x[n, :], self.Mu[k, :])
-                    for k in range(self._K)
+                    for k in range(self.num_clusters)
                 ]
             if dist is not None:
                 J = J + np.dot(r[n, :], dist)
@@ -189,27 +188,27 @@ class KmeansCluster:
         if len(x.shape) != 2:
             raise ValueError(f"input shape is wrong {x.shape=}")
         N = x.shape[0]
-        r = np.zeros((N, self._K), dtype=np.uint16)
+        r = np.zeros((N, self.num_clusters), dtype=np.uint16)
         for n in range(N):
             costs = None
             if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
                 costs = [
                     sum([v * v for v in (x[n, :] - self.Mu[k, :])])
-                    for k in range(self._K)
+                    for k in range(self.num_clusters)
                 ]
             elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
                 costs = [
                     sum([v * v for v in (np.log(x[n, :]) - np.log(self.Mu[k, :]))])
-                    for k in range(self._K)
+                    for k in range(self.num_clusters)
                 ]
             elif self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
                 costs = [
                     KmeansCluster.KL_divergence(x[n, :], self.Mu[k, :])
-                    for k in range(self._K)
+                    for k in range(self.num_clusters)
                 ]
             if costs is not None:
                 r[n, np.argmin(costs)] = 1
-            # r[n, np.argmin([ sum(v*v for v in x[n, :] - self.Mu[k, :]) for k in range(self._K)])] = 1
+            # r[n, np.argmin([ sum(v*v for v in x[n, :] - self.Mu[k, :]) for k in range(self.num_clusters)])] = 1
             r[n, :] = r[n, :] / r[n, :].sum()
             # wk = [(x[n, 0] - mu[k, 0])**2 + (x[n, 1] - mu[k, 1])**2 for k in range(K)]
             # r[n, argmin(wk)] = 1
@@ -228,15 +227,15 @@ class KmeansCluster:
         if self._train_mode != self.TRAIN_VAR_INSIDE:
             raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
         if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
-            costs = [sum([v * v for v in (x - self.Mu[k, :])]) for k in range(self._K)]
+            costs = [sum([v * v for v in (x - self.Mu[k, :])]) for k in range(self.num_clusters)]
         elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
             costs = [
                 sum([v * v for v in (np.log(x) - np.log(self.Mu[k, :]))])
-                for k in range(self._K)
+                for k in range(self.num_clusters)
             ]
         elif self._dist_mode == KmeansCluster.DISTANCE_KL_DIVERGENCE:
             costs = [
-                KmeansCluster.KL_divergence(x, self.Mu[k, :]) for k in range(self._K)
+                KmeansCluster.KL_divergence(x, self.Mu[k, :]) for k in range(self.num_clusters)
             ]
         else:
             raise ValueError("wrong distance model")
@@ -250,8 +249,15 @@ class KmeansCluster:
                 + f"costs={costs}"
             )
 
+        # convert to float (python scaler) from numpy array of numpy scalar
+        costs = costs.item() if isinstance(costs, np.ndarray) else costs
+        if not isinstance(costs, list):
+            raise ValueError(
+                f"wrong input in distance computation x={x} mu={self.Mu}"
+                + f"costs={costs}"
+            )
         k_min = np.argmin(costs)
-        self._loss += costs[k_min]
+        self._loss += costs[k_min].item()
         self._X0[k_min] += 1
         self._X1[k_min, :] += x
         if self._cov_mode == KmeansCluster.COV_DIAG:
@@ -270,14 +276,14 @@ class KmeansCluster:
         if self._train_mode != self.TRAIN_VAR_INSIDE:
             raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
         self._loss = 0.0
-        self._X0 = np.zeros([self._K])
-        self._X1 = np.zeros([self._K, self._D])
+        self._X0 = np.zeros([self.num_clusters])
+        self._X1 = np.zeros([self.num_clusters, self._D])
         if self._cov_mode == KmeansCluster.COV_NONE:
             self._X2 = None
         elif self._cov_mode == KmeansCluster.COV_FULL:
-            self._X2 = np.zeros([self._K, self._D, self._D])
+            self._X2 = np.zeros([self.num_clusters, self._D, self._D])
         elif self._cov_mode == KmeansCluster.COV_DIAG:
-            self._X2 = np.zeros([self._K, self._D])
+            self._X2 = np.zeros([self.num_clusters, self._D])
 
     def UpdateParameters(self) -> (float, list):
         """Update model parameters from inside training variables.
@@ -291,7 +297,7 @@ class KmeansCluster:
         """
         if self._train_mode != self.TRAIN_VAR_INSIDE:
             raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
-        for k in range(self._K):
+        for k in range(self.num_clusters):
             if self._X0[k] == 0:
                 continue
             self.Mu[k, :] = self._X1[k, :] / self._X0[k]
