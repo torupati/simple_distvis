@@ -214,6 +214,19 @@ class KmeansCluster:
             # r[n, argmin(wk)] = 1
         return r
 
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """
+        Predict the cluster index for each sample.
+
+        Args:
+            x (ndarray): input samples (N,D)
+        Returns:
+            r (ndarray): sample alignment to clusters (N,K)
+        """
+        r = self.get_alignment(x)
+        labels = np.argmax(r, axis=1)
+        return labels
+
     def PushSample(self, x: np.ndarray) -> (int, float):
         """Push one training sample to inner training variables
 

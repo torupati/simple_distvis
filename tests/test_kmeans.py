@@ -50,13 +50,13 @@ def test_kmeans_fit_predict():
     print(f"{X.shape=}")
 
     mu_init = np.random.rand(n_clusters, n_features)
-    kmeans_param, cost_history = kmeans_clustering(X, mu_init)
+    kmeans, cost_history = kmeans_clustering(X, mu_init)
     for i, c in enumerate(cost_history):
         print(f"itr={i} cost={c}")
         assert isinstance(c, float)
         assert c >= 0
         if i > 1:
             assert cost_history[i] <= cost_history[i - 1]
-    #labels = kmeans.predict(X)
-    #assert labels.shape == (n_samples,)
-    #assert set(labels) <= set(range(n_clusters))
+    labels = kmeans.predict(X)
+    assert labels.shape == (n_samples,)
+    assert set(labels) <= set(range(n_clusters))
