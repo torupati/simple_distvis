@@ -14,10 +14,9 @@ class TestKmeansCluster:
         assert result >= 0
 
     def test_invalid_train_mode(self):
-        cluster = KmeansCluster(3, 2)
-        cluster._train_mode = "INVALID"
+        cluster = KmeansCluster(3, 2, training=False)
         with pytest.raises(
-            NotImplementedError, match="Only TRAIN_VAR_INSIDE is supported now"
+            RuntimeError, match="model is not set to training mode."
         ):
             cluster.UpdateParameters()
 

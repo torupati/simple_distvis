@@ -32,9 +32,6 @@ class KmeansCluster:
     COV_FULL = 1
     COV_DIAG = 2
 
-    TRAIN_VAR_OUTSIDE = 0
-    TRAIN_VAR_INSIDE = 1
-
     DISTANCE_LINEAR_SCALE = 0
     DISTANCE_LOG_SCALE = 1
     DISTANCE_KL_DIVERGENCE = 2
@@ -74,11 +71,8 @@ class KmeansCluster:
             )
 
         # define training variables
-        # print(kwargs.get('trainvars', 'outside') == 'outside')
-        if kwargs.get("trainvars", "outside") == "outside":
-            self._train_mode = KmeansCluster.TRAIN_VAR_OUTSIDE
-        elif kwargs["trainvars"] == "inside":
-            self._train_mode = KmeansCluster.TRAIN_VAR_INSIDE
+        self._training = kwargs.get('training', True)
+        if self._training:
             self._loss = 0.0
             self._X0 = np.zeros([K], dtype=np.uint32)
             self._X1 = np.zeros([K, D])
@@ -89,9 +83,10 @@ class KmeansCluster:
             elif self._cov_mode == KmeansCluster.COV_DIAG:
                 self._X2 = np.zeros([K, D])
         else:
-            raise ValueError(
-                f"training variable mode is wrong. got {kwargs['trainvars']}"
-            )
+            self._X0 = None
+            self._X1 = None
+            self._X2 = None
+            self._loss = None
 
         if kwargs.get("dist_mode", "linear") == "linear":
             self._dist_mode = KmeansCluster.DISTANCE_LINEAR_SCALE
@@ -140,7 +135,7 @@ class KmeansCluster:
 
     @property
     def train_vars_mode(self) -> str:
-        return list(["outside", "inside"])[self._train_mode]
+        return "training"
 
     def distortion_measure(self, x: np.ndarray, r: np.ndarray) -> float:
         """Calculate distortion measure.
@@ -237,8 +232,8 @@ class KmeansCluster:
             int: aligned cluster's index (between 0 and K-1)
             float: loss of this sample
         """
-        if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
+        if self._training is False:
+            raise RuntimeError("model is not set to training mode.")
         if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
             costs = [sum([v * v for v in (x - self.Mu[k, :])]) for k in range(self.num_clusters)]
         elif self._dist_mode == KmeansCluster.DISTANCE_LOG_SCALE:
@@ -286,8 +281,8 @@ class KmeansCluster:
         Raises:
             Exception: invalid training setting
         """
-        if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
+        if self._training is False:
+            raise RuntimeError("model is not set to training mode.")
         self._loss = 0.0
         self._X0 = np.zeros([self.num_clusters])
         self._X1 = np.zeros([self.num_clusters, self._D])
@@ -308,8 +303,8 @@ class KmeansCluster:
         Returns:
             _type_: _description_
         """
-        if self._train_mode != self.TRAIN_VAR_INSIDE:
-            raise NotImplementedError("Only TRAIN_VAR_INSIDE is supported now.")
+        if self._training is False:
+            raise RuntimeError("model is not set to training mode.")
         for k in range(self.num_clusters):
             if self._X0[k] == 0:
                 continue
