@@ -144,7 +144,6 @@ You have a couple of options for disabling your Cloud Run services, which effect
 gcloud beta run services update SERVICE_NAME --scaling=0 --region=REGION_NAME --project=PROJECT_ID
 ```
 
-
 ### Unit Test with Pytest
 
 Add pytest in independencies.
@@ -174,11 +173,15 @@ uv run pytest --cov -v --capture=sys
 uv run pytest --cov -v --tb=short -s
 ```
 
-## Lint with RUFF
+### Lint with RUFF
+
+You can easily install ruff.
 
 ```shell
 uv add ruff --dev
 ```
+
+Check, and fix it.
 
 ```shell
 # check
@@ -187,7 +190,23 @@ uv run ruff check .
 # fix
 uv run ruff check --fix .
 uv run ruff check --fix --unsafe-fixes .
+```
 
-# format
+**format**: You can check the format and get the list of unformatted files
+
+```shell
+uv run ruff format --check .
+```
+
+You can see which lines are in bad format of all files or a file.
+
+```shell
+uv run ruff format --diff .
+uv run ruff format --diff src/hmm/kmeans.py
+```
+
+You can execute format.
+
+```shell
 uv run ruff format .
 ```

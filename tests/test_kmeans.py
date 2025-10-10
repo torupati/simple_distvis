@@ -15,9 +15,7 @@ class TestKmeansCluster:
 
     def test_trainable(self):
         cluster = KmeansCluster(3, 2, trainable=False)
-        with pytest.raises(
-            RuntimeError, match="model is not set to training mode."
-        ):
+        with pytest.raises(RuntimeError, match="model is not set to training mode."):
             cluster.UpdateParameters()
 
 
@@ -33,7 +31,9 @@ def test_kmeans_constructor():
 
     # Invalid covariance mode should raise ValueError
     bad_covariance_mode = "foofoo"
-    with pytest.raises(ValueError, match=f"covariance mode is wrong. got {bad_covariance_mode}"):
+    with pytest.raises(
+        ValueError, match=f"covariance mode is wrong. got {bad_covariance_mode}"
+    ):
         KmeansCluster(10, 10, covariance_mode=bad_covariance_mode)
 
 
@@ -43,14 +43,16 @@ def test_kmeans_constructor_parameters():
     # Valid parameters
     for mode in ["linear", "log", "kldiv"]:
         for cov_mode in ["diag", "full", "none"]:
-            cluster = KmeansCluster(5, 3, trainable=False, distance_mode=mode, covariance_mode=cov_mode)
+            cluster = KmeansCluster(
+                5, 3, trainable=False, distance_mode=mode, covariance_mode=cov_mode
+            )
             assert cluster is not None
             assert cluster.distance_mode == mode
             assert cluster.covariance_mode == cov_mode
             assert not cluster.trainable
             assert cluster.num_clusters == 5
             assert cluster.feature_dimensionality == 3
-    
+
     # Test different parameter combinations
     with pytest.raises(ValueError):
         KmeansCluster(3, 2, distance_mode="invalid_mode")  # Invalid distance_mode

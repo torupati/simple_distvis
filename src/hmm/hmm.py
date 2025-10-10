@@ -214,9 +214,7 @@ class HMM:
         _alpha_scale = np.ones(T) * np.nan
         _alpha = np.zeros((T, self._M), dtype=float)  # linear scale, not log scale
         # alpha[t=0,s] = pi[s] * b(x[t=0],s)
-        _alpha[0, :] = (
-            self.init_state * obsprob[0, :]
-        )
+        _alpha[0, :] = self.init_state * obsprob[0, :]
         _alpha_scale[0] = _alpha[0, :].sum()
         _alpha[0, :] = _alpha[0, :] / _alpha_scale[0]
         for t in range(1, T):  # for each time step t = 1, ..., T-1
@@ -438,7 +436,7 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit: int = 100) -> dict:
                     "obs_prob": hmm.obs_prob,
                     "n_state": hmm.M,
                     "n_obs": hmm.D,
-                    }
+                }
                 pickle.dump(
                     {
                         "model": hmm_param_dict,
