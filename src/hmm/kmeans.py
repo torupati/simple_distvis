@@ -36,43 +36,47 @@ class KmeansCluster:
     DISTANCE_LOG_SCALE = 1
     DISTANCE_KL_DIVERGENCE = 2
 
-    def __init__(self, K: int, D: int, **kwargs):
+    def __init__(self, K: int, D: int, trainable: bool = True, covariance_mode: str="diag", distance_mode: str = "linear"):
         """Initialize instance.
 
         Args:
             K (int): number of cluster. Fixed.
             D (int): dimension of smaples. Fixed.
-
+            trainable (bool): if True, training variables are created inside the instance and
+                updated by PushSample() method. If False, training variables are not created
+                and PushSample() method is not available.
             covariance_mode(str): "none"(default), "diag" or "full" (optional)
-            trainvars(str): "outside"(default) or "inside" (optional)
+            distance_mode (str): distance mode. "linear"(default), "log", "kldiv"
 
         Raises:
-            Exception: wrong covariance mode input
-            Exception: wrong training variable mode input
-
+            ValueError: wrong distance mode input
+            ValueError: wrong covariance mode input
         Note:
         If you want to change the number of clusters, new instance with desired
         cluster numbers should be created.
         """
-        self._D = D
+        if K <= 0:
+            raise ValueError(f"K must be > 0. got {K}")
+        if D <= 0:
+            raise ValueError(f"D must be > 0. got {D}")
         self.Mu = np.random.randn(K, D)  # centroid
-        if kwargs.get("covariance_mode", "diag") == "diag":
+        if covariance_mode == "diag":
             self._cov_mode = KmeansCluster.COV_DIAG
             self.Sigma = np.ones((K, D))
-        elif kwargs["covariance_mode"] == "full":
+        elif covariance_mode == "full":
             self._cov_mode = KmeansCluster.COV_FULL
             self.Sigma = np.ones((K, D, D))
-        elif kwargs["covariance_mode"] == "none":
+        elif covariance_mode == "none":
             self._cov_mode = KmeansCluster.COV_NONE
             self.Sigma = None
         else:
             raise ValueError(
-                f"covariance mode is wrong. got {kwargs['covariance_mode']}"
+                f"covariance mode is wrong. got {covariance_mode}"
             )
 
         # define training variables
-        self._training = kwargs.get('training', True)
-        if self._training:
+        self._trainable = trainable
+        if self._trainable:
             self._loss = 0.0
             self._X0 = np.zeros([K], dtype=np.uint32)
             self._X1 = np.zeros([K, D])
@@ -88,14 +92,14 @@ class KmeansCluster:
             self._X2 = None
             self._loss = None
 
-        if kwargs.get("dist_mode", "linear") == "linear":
+        if distance_mode == "linear":
             self._dist_mode = KmeansCluster.DISTANCE_LINEAR_SCALE
-        elif kwargs["dist_mode"] == "log":
+        elif distance_mode == "log":
             self._dist_mode = KmeansCluster.DISTANCE_LOG_SCALE
-        elif kwargs["dist_mode"] == "kldiv":
+        elif distance_mode == "kldiv":
             self._dist_mode = KmeansCluster.DISTANCE_KL_DIVERGENCE
         else:
-            raise ValueError(f"distance mode is wrong. got {kwargs['dist_mode']}")
+            raise ValueError(f"distance mode is wrong. got {distance_mode}")
 
     @property
     def num_clusters(self) -> int:
@@ -107,16 +111,16 @@ class KmeansCluster:
         return self.Mu.shape[0]
 
     @property
-    def D(self) -> int:
+    def feature_dimensionality(self) -> int:
         """Dimension of input data
 
         Returns:
             int: dimension of input data
         """
-        return self._D
+        return self.Mu.shape[1]
 
     @property
-    def DistanceType(self) -> str:
+    def distance_mode(self) -> str:
         name_list = {
             self.DISTANCE_LINEAR_SCALE: "linear",
             self.DISTANCE_LOG_SCALE: "log",
@@ -125,17 +129,22 @@ class KmeansCluster:
         return name_list[self._dist_mode]
 
     def __repr__(self):
-        return "{n} K:{k} D:{d}".format(
-            n=self.__class__.__name__, k=self.num_clusters, d=self.D
-        ) + " dist={d2}".format(d2=self.DistanceType)
+        return "KmeansClustering {n} num_cluster:{k} feature dimensionality:{d}".format(
+            n=self.__class__.__name__, k=self.num_clusters, d=self.feature_dimensionality
+        ) + " distance={d2}".format(d2=self.distance_mode) + " covariance={c}".format(c=self.covariance_mode) + " trainable={tr}".format(tr=self.trainable)
 
     @property
     def covariance_mode(self):
-        return self._cov_mode
+        name_list = {
+            self.COV_DIAG: "diag",
+            self.COV_FULL: "full",
+            self.COV_NONE: "none",
+        }
+        return name_list[self._cov_mode]
 
     @property
-    def train_vars_mode(self) -> str:
-        return "training"
+    def trainable(self) -> bool:
+        return self._trainable
 
     def distortion_measure(self, x: np.ndarray, r: np.ndarray) -> float:
         """Calculate distortion measure.
@@ -232,7 +241,7 @@ class KmeansCluster:
             int: aligned cluster's index (between 0 and K-1)
             float: loss of this sample
         """
-        if self._training is False:
+        if self._trainable is False:
             raise RuntimeError("model is not set to training mode.")
         if self._dist_mode == KmeansCluster.DISTANCE_LINEAR_SCALE:
             costs = [sum([v * v for v in (x - self.Mu[k, :])]) for k in range(self.num_clusters)]
@@ -272,7 +281,7 @@ class KmeansCluster:
             self._X2[k_min, :] = x * x
         elif self._cov_mode == KmeansCluster.COV_FULL:
             # NOT checked.
-            self._X2[k_min, :, :] = x.reshape(self._D, 1) * x.reshape(1, self._D)
+            self._X2[k_min, :, :] = x.reshape(self.feature_dimensionality, 1) * x.reshape(1, self.feature_dimensionality)
         return k_min, costs[k_min]
 
     def ClearTrainingVariables(self):
@@ -281,29 +290,30 @@ class KmeansCluster:
         Raises:
             Exception: invalid training setting
         """
-        if self._training is False:
+        if self._trainable is False:
             raise RuntimeError("model is not set to training mode.")
         self._loss = 0.0
         self._X0 = np.zeros([self.num_clusters])
-        self._X1 = np.zeros([self.num_clusters, self._D])
+        self._X1 = np.zeros([self.num_clusters, self.feature_dimensionality])
         if self._cov_mode == KmeansCluster.COV_NONE:
             self._X2 = None
         elif self._cov_mode == KmeansCluster.COV_FULL:
-            self._X2 = np.zeros([self.num_clusters, self._D, self._D])
+            self._X2 = np.zeros([self.num_clusters, self.feature_dimensionality, self.feature_dimensionality])
         elif self._cov_mode == KmeansCluster.COV_DIAG:
-            self._X2 = np.zeros([self.num_clusters, self._D])
+            self._X2 = np.zeros([self.num_clusters, self.feature_dimensionality])
 
     def UpdateParameters(self) -> (float, list):
         """Update model parameters from inside training variables.
         Note that this method does not clear training variables.
 
         Raises:
-            Exception: Invalid training setting
+            RuntimeError: invalid training setting
 
         Returns:
-            _type_: _description_
+            float: total loss in current training variables
+            list: number of samples aligned to each cluster
         """
-        if self._training is False:
+        if self._trainable is False:
             raise RuntimeError("model is not set to training mode.")
         for k in range(self.num_clusters):
             if self._X0[k] == 0:
@@ -359,16 +369,16 @@ def kmeans_clustering(X: np.ndarray, mu_init: np.ndarray, **kwargs):
     Returns:
         _type_: _description_
     """
-    K, Dim = mu_init.shape
-    N, Dim2 = X.shape
-    if Dim != Dim2:
-        raise ValueError(f"Wrong dim. X(N,D={Dim}), mu_init(M, D={Dim2})")
+    K, feature_dim = mu_init.shape
+    N, feature_dim2 = X.shape
+    if feature_dim != feature_dim2:
+        raise ValueError(f"Wrong dim. X(N,D={feature_dim2}), mu_init(M, D={feature_dim})")
 
     max_it = kwargs.get("max_it", 20)
     # save_ckpt = kwargs.get('save_ckpt', False)
-    dist_mode = kwargs.get("dist_mode", "linear")
+    distance_mode = kwargs.get("distance_mode", "linear")
 
-    kmeansparam = KmeansCluster(K, Dim, trainvars="inside", dist_mode=dist_mode)
+    kmeansparam = KmeansCluster(K, feature_dim, trainable=True, distance_mode=distance_mode)
     logger.info("initialize: %s", str(kmeansparam))
     kmeansparam.Mu = mu_init
     cost_history = []
