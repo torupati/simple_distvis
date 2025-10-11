@@ -23,7 +23,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 You can lanch the application.
 
 ```bash
-uv run streamlit run app.py 
+uv run streamlit run app.py
 ```
 
 I am using WSL2, Ubuntu 24.02 and following messages are shown in terminal.
@@ -105,7 +105,7 @@ gcloud run deploy streamlit-app \
 gcloud iam service-accounts create cloud-build-sa --display-name="Cloud Build Service Account"
 ```
 
-- Add roles to the service account. 
+- Add roles to the service account.
 
 ```
 gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
@@ -210,3 +210,11 @@ You can execute format.
 ```shell
 uv run ruff format .
 ```
+
+## Pre-commit framework
+
+1. Add precommit.  ```uv add pre-commit --dev```
+2. Edit  .pre-commit-config.yaml
+3. Update to the latest version ```uv run pre-commit autoupdate```
+4. Test ```uv run pre-commit run --all-files```
+5. Install: ```uv run pre-commit install```
