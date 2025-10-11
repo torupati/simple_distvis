@@ -21,23 +21,25 @@ class GaussianMixtureModel:
     Update with given training data by EM algorithm is implemented.
     """
 
-    def __init__(self, M: int, D: int):
+    def __init__(self, num_components: int, feature_dimension: int):
         """
         Each Gaussian is initialized as zero means, unit covariance.
         Weight is initailized as equal probability.
         Args:
-            M (int): number of mixtures
-            D (int): dimension of smaples
+            num_components (int): number of mixtures
+            feature_dimension (int): dimension of smaples
         """
-        if M < 1 or D < 1:
-            raise ValueError("M and D must be > 0")
-        self._M = M
-        self._D = D
-        self.Mu = np.random.randn(M, D)
-        self.Sigma = np.zeros((M, D, D))
-        for m in range(self._M):
-            self.Sigma[m, :, :] = np.eye(D)
-        self.Pi = np.ones(M) / M  # equal probability for initial condition
+        if num_components < 1:
+            raise ValueError(f"num_components must be > 0. got {num_components}")
+        if feature_dimension < 1:
+            raise ValueError(f"feature_dimension must be > 0. got {feature_dimension}")
+        self.Mu = np.random.randn(num_components, feature_dimension)
+        self.Sigma = np.zeros((num_components, feature_dimension, feature_dimension))
+        for m in range(self.Mu.shape[0]):
+            self.Sigma[m, :, :] = np.eye(feature_dimension)
+        self.Pi = (
+            np.ones(num_components) / num_components
+        )  # equal probability for initial condition
 
     @property
     def num_components(self) -> int:
@@ -46,20 +48,20 @@ class GaussianMixtureModel:
         Returns:
             int: number of Gaussians
         """
-        return self._M
+        return self.Mu.shape[0]
 
     @property
-    def D(self) -> int:
+    def feature_dimension(self) -> int:
         """Dimension of input data. Read-only.
 
         Returns:
             int: dimension of input data
         """
-        return self._D
+        return self.Mu.shape[1]
 
     def __repr__(self):
         return "{n} (M={k} D={d})".format(
-            n=self.__class__.__name__, k=self.num_components, d=self.D
+            n=self.__class__.__name__, k=self.num_components, d=self.feature_dimension
         )
 
     def probability(self, x: ndarray) -> ndarray:
@@ -73,7 +75,7 @@ class GaussianMixtureModel:
         """
         return sum(
             self.Pi[k] * multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(x)
-            for k in range(self._M)
+            for k in range(self.num_components)
         )
 
     def log_likelihood(self, x: np.ndarray) -> float:
@@ -85,7 +87,7 @@ class GaussianMixtureModel:
         Returns:
             float: Total log-likelihood
         """
-        N, D = x.shape
+        N = x.shape[0]
         y = np.zeros((N, self.num_components))  # keep all Gaussian pdf (not smart)
         for k in range(self.num_components):
             y[:, k] = multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(
@@ -94,7 +96,7 @@ class GaussianMixtureModel:
         lh = 0
         for n in range(N):
             wk = 0
-            for k in range(self._M):
+            for k in range(self.num_components):
                 wk = wk + self.Pi[k] * y[n, k]
             lh = lh + np.log(wk)
         return lh
@@ -118,7 +120,7 @@ class GaussianMixtureModel:
                     * multivariate_normal(
                         self.Mu[m, :], self.Sigma[m, :, :], allow_singular=True
                     ).pdf(x)
-                    for m in range(self._M)
+                    for m in range(self.num_components)
                 ]
             ).transpose()  # (N,M)
         except np.linalg.LinAlgError as e:
@@ -185,8 +187,8 @@ def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int = 12, **kwar
     """Train GMM
 
     Args:
-        gmm (GaussianMixtureModel): _description_
-        X (np.ndarray): _description_
+        gmm (GaussianMixtureModel): initial GMM
+        X (np.ndarray): training data
         max_it (int, optional): number of iteration. Defaults to 12.
 
     Returns:
@@ -213,7 +215,7 @@ def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int = 12, **kwar
                     _i=len(loglikelihood_history), _l=_ll / N
                 )
             )
-            if kwargs.get("plot_ckpt", False) and gmm.D >= 2:
+            if kwargs.get("plot_ckpt", False) and gmm.feature_dimension >= 2:
                 import matplotlib.pyplot as plt
 
                 fig, ax = plt.subplots(1, 1, figsize=(6, 6))

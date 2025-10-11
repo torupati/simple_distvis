@@ -8,10 +8,10 @@ class TestGaussianMixtureModel:
     def test_constructor(self):
         """Test GaussianMixtureModel constructor"""
         M, D = 3, 2
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
 
         assert gmm.num_components == M
-        assert gmm.D == D
+        assert gmm.feature_dimension == D
         assert gmm.Pi.shape == (M,)
         assert gmm.Mu.shape == (M, D)
         assert gmm.Sigma.shape == (M, D, D)
@@ -25,10 +25,10 @@ class TestGaussianMixtureModel:
     def test_constructor_invalid_parameters(self):
         """Test constructor with invalid parameters"""
         with pytest.raises(ValueError):
-            GaussianMixtureModel(M=0, D=2)  # M should be > 0
+            GaussianMixtureModel(num_components=0, feature_dimension=2)
 
         with pytest.raises(ValueError):
-            GaussianMixtureModel(M=3, D=0)  # D should be > 0
+            GaussianMixtureModel(num_components=3, feature_dimension=0)
 
     def test_update_e_step(self):
         """Test E-step (expectation step)"""
@@ -36,7 +36,7 @@ class TestGaussianMixtureModel:
         M, D = 2, 3
         N = 100
 
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
         X = np.random.randn(N, D)
 
         gamma, log_likelihood = gmm.update_e_step(X)
@@ -56,7 +56,7 @@ class TestGaussianMixtureModel:
         M, D = 2, 3
         N = 100
 
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
         X = np.random.randn(N, D)
 
         # Create dummy gamma (responsibilities)
@@ -91,7 +91,7 @@ class TestGaussianMixtureModel:
         M, D = 2, 3
         N = 100
 
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
         X = np.random.randn(N, D)
         gamma = np.random.rand(N, M)
         gamma /= gamma.sum(axis=1, keepdims=True)
@@ -108,9 +108,9 @@ class TestGaussianMixtureModel:
     @pytest.mark.parametrize("M,D", [(2, 1), (3, 2), (4, 3)])
     def test_different_dimensions(self, M, D):
         """Test GMM with different numbers of mixtures and dimensions"""
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
         assert gmm.num_components == M
-        assert gmm.D == D
+        assert gmm.feature_dimension == D
 
         # Test with random data
         np.random.seed(42)
@@ -135,7 +135,7 @@ class TestTrainGMM:
         X = np.vstack([cluster1, cluster2])
 
         # Initialize GMM
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
 
         # Train
         trained_gmm, log_likelihood_history = train_gmm(
@@ -159,7 +159,7 @@ class TestTrainGMM:
         N = 100
 
         X = np.random.randn(N, D)
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
 
         _, log_likelihood_history = train_gmm(
             gmm, X, max_it=50, tolerance=1e-6, plot_ckpt=False
@@ -175,7 +175,7 @@ class TestTrainGMM:
         N = 50
 
         X = np.random.randn(N, D)
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
 
         original_pi = gmm.Pi.copy()
 
@@ -194,7 +194,7 @@ class TestTrainGMM:
         N = 10  # Very small dataset
 
         X = np.random.randn(N, D)
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
 
         # Should not crash with small dataset
         trained_gmm, log_likelihood_history = train_gmm(
@@ -212,7 +212,7 @@ class TestTrainGMM:
         N = 50
 
         X = np.random.randn(N, D)
-        gmm = GaussianMixtureModel(M=M, D=D)
+        gmm = GaussianMixtureModel(num_components=M, feature_dimension=D)
 
         _, log_likelihood_history = train_gmm(gmm, X, max_it=max_it, plot_ckpt=False)
 

@@ -23,10 +23,11 @@ class HMM:
         """Define HMM parameter.
 
         Args:
-            M (int): Number of hidden state
+            num_hidden_states (int): Number of hidden state
             D (int): Category number (dimension) of observation
         """
-        self._M = M
+        if M < 1:
+            raise ValueError(f"num_hidden_states must be > 0. got {M}")
         self._D = D
         self.init_state = np.array(
             [1 / M] * M
@@ -48,7 +49,7 @@ class HMM:
 
     def __repr__(self) -> str:
         return (
-            f"HMM (#state={self._M}, #dim={self._D}) \n"
+            f"HMM (#state={self.num_hidden_states}, #dim={self._D}) \n"
             + " [initial state probability]\n"
             + f"{self.init_state}\n"
             + " [transition probability]\n"
@@ -58,13 +59,13 @@ class HMM:
         )
 
     @property
-    def M(self) -> int:
+    def num_hidden_states(self) -> int:
         """Number of hidden states. read-only.
 
         Returns:
             int: number of hidden states
         """
-        return self._M
+        return self.state_tran.shape[0]
 
     @property
     def D(self) -> int:
@@ -76,12 +77,14 @@ class HMM:
         return self._D
 
     def randomize_parameter(self):
-        _vals = np.random.uniform(size=self._M)
+        _vals = np.random.uniform(size=self.num_hidden_states)
         self.init_state = _vals / sum(_vals)  # _vals > 0 is garanteered.
 
-        self.state_tran = np.random.uniform(size=(self._M, self._M))
-        self.obs_prob = np.random.uniform(size=(self._M, self._D))
-        for m in range(self._M):
+        self.state_tran = np.random.uniform(
+            size=(self.num_hidden_states, self.num_hidden_states)
+        )
+        self.obs_prob = np.random.uniform(size=(self.num_hidden_states, self.D))
+        for m in range(self.num_hidden_states):
             self.state_tran[m, :] = self.state_tran[m, :] / sum(self.state_tran[m, :])
             self.obs_prob[m, :] = self.obs_prob[m, :] / sum(self.obs_prob[m, :])
 
@@ -104,17 +107,19 @@ class HMM:
         # it is not necessary to keep at the same time and memory exhasting.
         # (1) log P(x[t]|s[t]) is only required at time step t in viterbi search
         # (2) Probability can be stored in log scale in advance.
-        _log_obsprob = np.zeros((T, self._M))
+        _log_obsprob = np.zeros((T, self.num_hidden_states))
         for t in range(T):
-            x_t = np.zeros(self._D)
+            x_t = np.zeros(self.D)
             x_t[obss[t]] = 1.0
-            for s in range(self._M):
+            for s in range(self.num_hidden_states):
                 _obs_prob = self.obs_prob[s, :]
                 _obs_prob[_obs_prob < 1.0e-100] = 1.0e-100
                 _log_obsprob[t, s] = np.dot(x_t, np.log(_obs_prob))
 
-        _trellis_prob = np.ones((self._M, T), dtype=float) * np.log(eps)  # log scale
-        _trellis_bp = np.zeros((self._M, T), dtype=int)
+        _trellis_prob = np.ones((self.num_hidden_states, T), dtype=float) * np.log(
+            eps
+        )  # log scale
+        _trellis_bp = np.zeros((self.num_hidden_states, T), dtype=int)
 
         _log_init_state = []
         for x in self.init_state:
@@ -125,7 +130,7 @@ class HMM:
         _trellis_prob[:, 0] = _log_init_state + _log_obsprob[0, :]
         _trellis_bp[:, 0] = 0
         for t in range(1, T):  # for each time step t
-            for j in range(self._M):  # for each state s[t-1]=i to s[t]=j
+            for j in range(self.num_hidden_states):  # for each state s[t-1]=i to s[t]=j
                 # _probs[i] = P(x[1:t]|s[t-1]=i,s[t]=j)
                 _probs = (
                     _trellis_prob[:, t - 1]
@@ -166,8 +171,10 @@ class HMM:
         assert len(best_path) == len(obss)
         self._training_total_log_likelihood += log_likelihood
 
-        _gamma1 = zeros([T, self._M])  # element is binary
-        _gamma2 = zeros([T - 1, self._M, self._M])  # g(t, s, s') element is binary
+        _gamma1 = zeros([T, self.num_hidden_states])  # element is binary
+        _gamma2 = zeros(
+            [T - 1, self.num_hidden_states, self.num_hidden_states]
+        )  # g(t, s, s') element is binary
         for t, s in enumerate(best_path):
             _gamma1[t, s] = 1.0  # gamma(t,s)=P(S[t]=s|X)
             if t < T - 1:
@@ -187,11 +194,11 @@ class HMM:
             _type_: _description_
         """
         T = len(obss)
-        _log_obsprob = np.zeros((T, self._M))
+        _log_obsprob = np.zeros((T, self.num_hidden_states))
         for t in range(T):
             x_t = np.zeros(self._D)
             x_t[obss[t]] = 1.0
-            for s in range(self._M):
+            for s in range(self.num_hidden_states):
                 _log_obsprob[t, s] = np.dot(x_t, np.log(self.obs_prob[s, :]))
         return _log_obsprob
 
@@ -210,17 +217,22 @@ class HMM:
             _alpha_scale (np.ndarray): scaling factor, shape (T,)
         """
         T, _M = obsprob.shape
-        assert _M == self._M
+        if obsprob.shape[1] != self.num_hidden_states:
+            raise ValueError(
+                f"obsprob.shape[1] ({obsprob.shape[1]}) must be same as num_hidden_states ({self.num_hidden_states})"
+            )
         _alpha_scale = np.ones(T) * np.nan
-        _alpha = np.zeros((T, self._M), dtype=float)  # linear scale, not log scale
+        _alpha = np.zeros(
+            (T, self.num_hidden_states), dtype=float
+        )  # linear scale, not log scale
         # alpha[t=0,s] = pi[s] * b(x[t=0],s)
         _alpha[0, :] = self.init_state * obsprob[0, :]
         _alpha_scale[0] = _alpha[0, :].sum()
         _alpha[0, :] = _alpha[0, :] / _alpha_scale[0]
         for t in range(1, T):  # for each time step t = 1, ..., T-1
-            for i in range(self._M):
+            for i in range(self.num_hidden_states):  # for each state s[t]=i
                 _alpha[t, i] = 0.0
-                for _i0 in range(self._M):
+                for _i0 in range(self.num_hidden_states):
                     _alpha[t, i] += (
                         _alpha[t - 1, _i0] * self.state_tran[_i0, i] * obsprob[t, i]
                     )
@@ -242,9 +254,9 @@ class HMM:
             np.ndarray: (T, M)-shape array, log observation probabilities
         """
         T = len(obss)
-        _obsprob = np.zeros((T, self._M))
+        _obsprob = np.zeros((T, self.num_hidden_states))
         for t in range(T):
-            for s in range(self._M):
+            for s in range(self.num_hidden_states):
                 _obsprob[t, s] = self.obs_prob[s, obss[t]]
         return _obsprob
 
@@ -268,18 +280,20 @@ class HMM:
         self._training_total_log_likelihood += _log_prob
         # print('alpha=', _alpha)
 
-        _beta = np.ones((T, self._M)) * np.nan  # linear scale, not log scale
-        _beta[T - 1, :] = np.ones(self._M)
-        _g1 = np.ones((T, self._M)) * np.nan
-        _g2 = np.ones((T - 1, self._M, self._M)) * np.nan
+        _beta = (
+            np.ones((T, self.num_hidden_states)) * np.nan
+        )  # linear scale, not log scale
+        _beta[T - 1, :] = np.ones(self.num_hidden_states)
+        _g1 = np.ones((T, self.num_hidden_states)) * np.nan
+        _g2 = np.ones((T - 1, self.num_hidden_states, self.num_hidden_states)) * np.nan
         _g1[T - 1, :] = _alpha[T - 1, :] * _beta[T - 1, :]
         # print('gamma=', _g1[T-1,:])
         # print(f'sum(gamma[t={T-1}])=', _g1[T-1,:].sum(), ' (last)')
         for t in range(T - 1, 0, -1):  # for each time step t = T-1, ..., 0
             # P(s[t-1],s[t]=s,X[t:T]=x[t:T])
-            for i in range(self._M):
+            for i in range(self.num_hidden_states):
                 _beta[t - 1, i] = 0.0
-                for _j in range(self._M):
+                for _j in range(self.num_hidden_states):
                     _beta[t - 1, i] += (
                         self.state_tran[i, _j] * _obsprob[t, _j] * _beta[t, _j]
                     )
@@ -291,8 +305,8 @@ class HMM:
             assert (_g1[t - 1, :].sum() - 1.0) < 1.0e-9
             # print(f'sum(gamma[t={t-1}])=', _g1[t-1,:].sum())
             # print(f'gamma[t={t-1}]=', _g1[t-1,:])
-            for i in range(self._M):
-                for j in range(self._M):  # transition s[t-1] to s[t]
+            for i in range(self.num_hidden_states):
+                for j in range(self.num_hidden_states):  # transition s[t-1] to s[t]
                     _g2[t - 1, i, j] = (
                         _alpha[t - 1, i]
                         * self.state_tran[i, j]
@@ -304,7 +318,7 @@ class HMM:
             # print('gzi=', _g2[t-1,:,:])
             # print(f'sum(gzai[t={t-1}])', _g2[t-1,:,:].sum(axis=1))
             # input()
-            for i in range(self._M):
+            for i in range(self.num_hidden_states):
                 assert (_g1[t - 1, i] - _g2[t - 1, i, :].sum()) < 1.0e-06
         return _g1, _g2, _log_prob
 
@@ -327,7 +341,7 @@ class HMM:
             # make observation vector.
             o_t = np.zeros(self._D)
             o_t[obss[t]] = 1
-            for _m in range(self._M):
+            for _m in range(self.num_hidden_states):
                 self._obs_count[_m, :] = self._obs_count[_m, :] + g1[t, _m] * o_t
         self._training_count += 1
 
@@ -344,7 +358,7 @@ class HMM:
             eps  # if probability is lower then eps, set eps to void log(0)
         )
         self.init_state = _init_state
-        for m in range(self._M):  # normalize each state
+        for m in range(self.num_hidden_states):  # normalize each state
             if sum(self._state_tran_stat[m, :]) > 0.0:
                 self.state_tran[m, :] = self._state_tran_stat[m, :] / sum(
                     self._state_tran_stat[m, :]
@@ -353,9 +367,11 @@ class HMM:
                 self.obs_prob[m, :] = self._obs_count[m, :] / sum(self._obs_count[m, :])
 
         # reset training variables
-        self._ini_state_stat = np.zeros(self._M)
-        self._state_tran_stat = np.zeros((self._M, self._M))
-        self._obs_count = np.zeros((self._M, self._D))
+        self._ini_state_stat = np.zeros(self.num_hidden_states)
+        self._state_tran_stat = np.zeros(
+            (self.num_hidden_states, self.num_hidden_states)
+        )
+        self._obs_count = np.zeros((self.num_hidden_states, self._D))
         self._training_count = 0
 
         tll = self._training_total_log_likelihood
@@ -434,7 +450,7 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit: int = 100) -> dict:
                     "init_state": hmm.init_state,
                     "state_tran": hmm.state_tran,
                     "obs_prob": hmm.obs_prob,
-                    "n_state": hmm.M,
+                    "n_state": hmm.num_hidden_states,
                     "n_obs": hmm.D,
                 }
                 pickle.dump(
