@@ -218,3 +218,17 @@ uv run ruff format .
 3. Update to the latest version ```uv run pre-commit autoupdate```
 4. Test ```uv run pre-commit run --all-files```
 5. Install: ```uv run pre-commit install```
+
+Example of git commit.
+
+```
+$ git commit -m "configure pre-commit"
+ruff (legacy alias)..................................(no files to check)Skipped
+ruff format..........................................(no files to check)Skipped
+trim trailing whitespace.................................................Passed
+fix end of files.........................................................Passed
+check for merge conflicts................................................Passed
+check yaml...............................................................Passed
+[feature/20250831_stochastic_process 4817021] configure pre-commit
+ 7 files changed, 15 insertions(+), 7 deletions(-)
+```

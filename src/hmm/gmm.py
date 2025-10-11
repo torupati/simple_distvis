@@ -40,7 +40,7 @@ class GaussianMixtureModel:
         self.Pi = np.ones(M) / M  # equal probability for initial condition
 
     @property
-    def M(self) -> int:
+    def num_components(self) -> int:
         """Number of Gaussians. Read-only.
 
         Returns:
@@ -59,7 +59,7 @@ class GaussianMixtureModel:
 
     def __repr__(self):
         return "{n} (M={k} D={d})".format(
-            n=self.__class__.__name__, k=self._M, d=self._D
+            n=self.__class__.__name__, k=self.num_components, d=self.D
         )
 
     def probability(self, x: ndarray) -> ndarray:
@@ -86,8 +86,8 @@ class GaussianMixtureModel:
             float: Total log-likelihood
         """
         N, D = x.shape
-        y = np.zeros((N, self._M))  # keep all Gaussian pdf (not smart)
-        for k in range(self._M):
+        y = np.zeros((N, self.num_components))  # keep all Gaussian pdf (not smart)
+        for k in range(self.num_components):
             y[:, k] = multivariate_normal(self.Mu[k, :], self.Sigma[k, :, :]).pdf(
                 x
             )  # (K,N)
@@ -141,7 +141,7 @@ class GaussianMixtureModel:
         N = x.shape[0]
         self.Pi = sum(gamma, axis=0) / sum(gamma)
         self.Mu = dot(gamma.transpose(), x)
-        for m in range(self.M):
+        for m in range(self.num_components):
             if sum(gamma[:, m]) < 1.0e-10:
                 continue
             self.Mu[m, :] = self.Mu[m, :] / sum(gamma[:, m])
@@ -196,7 +196,10 @@ def train_gmm(gmm: GaussianMixtureModel, X: np.ndarray, max_it: int = 12, **kwar
     loglikelihood_history = []  # distortion measure
     with logging_redirect_tqdm(loggers=[logger]):
         pbar = tqdm(
-            range(max_it), desc=f"gmm-train(M={gmm.M})", postfix="postfix", ncols=80
+            range(max_it),
+            desc=f"gmm-train(M={gmm.num_components})",
+            postfix="postfix",
+            ncols=80,
         )
         for it in pbar:
             # for it in range(0, max_it):
