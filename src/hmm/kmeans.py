@@ -38,7 +38,7 @@ class KmeansCluster:
 
     def __init__(
         self,
-        K: int,
+        num_clusters: int,
         D: int,
         trainable: bool = True,
         covariance_mode: str = "diag",
@@ -47,7 +47,7 @@ class KmeansCluster:
         """Initialize instance.
 
         Args:
-            K (int): number of cluster. Fixed.
+            num_clusters (int): number of clusters. Fixed.
             D (int): dimension of smaples. Fixed.
             trainable (bool): if True, training variables are created inside the instance and
                 updated by PushSample() method. If False, training variables are not created
@@ -62,17 +62,17 @@ class KmeansCluster:
         If you want to change the number of clusters, new instance with desired
         cluster numbers should be created.
         """
-        if K <= 0:
-            raise ValueError(f"K must be > 0. got {K}")
+        if num_clusters <= 0:
+            raise ValueError(f"num_clusters must be > 0. got {num_clusters}")
         if D <= 0:
             raise ValueError(f"D must be > 0. got {D}")
-        self.Mu = np.random.randn(K, D)  # centroid
+        self.Mu = np.random.randn(num_clusters, D)  # centroid
         if covariance_mode == "diag":
             self._cov_mode = KmeansCluster.COV_DIAG
-            self.Sigma = np.ones((K, D))
+            self.Sigma = np.ones((num_clusters, D))
         elif covariance_mode == "full":
             self._cov_mode = KmeansCluster.COV_FULL
-            self.Sigma = np.ones((K, D, D))
+            self.Sigma = np.ones((num_clusters, D, D))
         elif covariance_mode == "none":
             self._cov_mode = KmeansCluster.COV_NONE
             self.Sigma = None
@@ -83,14 +83,14 @@ class KmeansCluster:
         self._trainable = trainable
         if self._trainable:
             self._loss = 0.0
-            self._X0 = np.zeros([K], dtype=np.uint32)
-            self._X1 = np.zeros([K, D])
+            self._X0 = np.zeros([num_clusters], dtype=np.uint32)
+            self._X1 = np.zeros([num_clusters, D])
             if self._cov_mode == KmeansCluster.COV_NONE:
                 self._X2 = None
             elif self._cov_mode == KmeansCluster.COV_FULL:
-                self._X2 = np.zeros([K, D, D])
+                self._X2 = np.zeros([num_clusters, D, D])
             elif self._cov_mode == KmeansCluster.COV_DIAG:
-                self._X2 = np.zeros([K, D])
+                self._X2 = np.zeros([num_clusters, D])
         else:
             self._X0 = None
             self._X1 = None
@@ -163,7 +163,7 @@ class KmeansCluster:
 
         Args:
             x (ndarray): input samples (N,D)
-            r (ndarray): sample alignment to clusters (N,K)
+            r (ndarray): sample alignment to clusters (N,num_clusters)
 
         Returns:
             float: disotrion (average per sample). If N = 0, 0.0 is returned.
