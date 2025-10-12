@@ -232,3 +232,22 @@ check yaml...............................................................Passed
 [feature/20250831_stochastic_process 4817021] configure pre-commit
  7 files changed, 15 insertions(+), 7 deletions(-)
 ```
+
+## Documentation
+
+Install sphinx
+
+```shell
+uv add sphinx sphinx-rtd-theme --dev
+```
+
+```shell
+mkdir docs && cd docs
+```
+
+After editing conf.py, build
+
+```shell
+uv run sphinx-apidoc -o . ../src
+uv run sphinx-build -b html . _build/html
+```
