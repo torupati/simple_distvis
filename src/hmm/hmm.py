@@ -19,45 +19,52 @@ class HMM:
     HMM parameter definition
     """
 
-    def __init__(self, M: int, D: int):
+    def __init__(
+        self,
+        num_hidden_states: int,
+        feature_dim: int,
+        observation_type: str = "discrete",
+    ):
         """Define a Hidden Markov Model (HMM) parameter.
 
         Args:
             num_hidden_states (int): Number of hidden state
-            D (int): Category number (dimension) of observation
+            feature_dim (int): Category number (dimension) of observation
         """
-        if M < 1:
-            raise ValueError(f"num_hidden_states must be > 0. got {M}")
+        if num_hidden_states < 1:
+            raise ValueError(f"num_hidden_states must be > 0. got {num_hidden_states}")
         self.init_state = np.array(
-            [1 / M] * M
+            [1 / num_hidden_states] * num_hidden_states
         )  # initial state probability Pr(s[t=0]==i)
-        self.state_tran = np.ones((M, M)) * (
-            1 / M
+        self.state_tran = np.ones((num_hidden_states, num_hidden_states)) * (
+            1 / num_hidden_states
         )  # state transition probability, Pr(s[t+1]=j | s[t]=i)
-        if D < 1:
-            raise ValueError(f"D must be > 0. got {D}")
-        self._D = D
-        self.obs_prob = np.zeros((M, D))  # state emission probability, Pr(y|s[t]=i)
-        for m in range(M):
-            self.obs_prob[m, :] = np.random.uniform(0, 1, D)
+        if feature_dim < 1:
+            raise ValueError(f"feature_dim must be > 0. got {feature_dim}")
+
+        self.obs_prob = np.zeros(
+            (num_hidden_states, feature_dim)
+        )  # state emission probability, Pr(y|s[t]=i)
+        for m in range(num_hidden_states):
+            self.obs_prob[m, :] = np.random.uniform(0, 1, feature_dim)
             self.obs_prob[m, :] = self.obs_prob[m, :] / self.obs_prob[m, :].sum()
 
         # training variables (keep sufficient statistics for parameter update)
-        self._ini_state_stat = np.zeros(M)
-        self._state_tran_stat = np.zeros((M, M))
-        self._obs_count = np.zeros((M, D))
+        self._ini_state_stat = np.zeros(num_hidden_states)
+        self._state_tran_stat = np.zeros((num_hidden_states, num_hidden_states))
+        self._obs_count = np.zeros((num_hidden_states, feature_dim))
         self._training_count = 0
         self._training_total_log_likelihood = 0.0
 
     def __repr__(self) -> str:
         return (
-            f"HMM (#state={self.num_hidden_states}, #dim={self._D}) \n"
+            f"HMM (#state={self.num_hidden_states}) \n"
             + " [initial state probability]\n"
-            + f"{self.init_state}\n"
+            + f"{self.init_state.shape}\n"
             + " [transition probability]\n"
-            + f"{self.state_tran}\n"
+            + f"{self.state_tran.shape}\n"
             + "observation probability\n"
-            + f" {self.obs_prob}"
+            + f" {self.obs_prob.shape}"
         )
 
     @property
@@ -69,29 +76,39 @@ class HMM:
         """
         return self.state_tran.shape[0]
 
-    @property
-    def D(self) -> int:
-        """Number of category or dimension of observation. read-only.
-
-        Returns:
-            int: dimension of observation
-        """
-        return self._D
-
-    def randomize_parameter(self):
+    def randomize_state_transition_probabilities(self):
         _vals = np.random.uniform(size=self.num_hidden_states)
         self.init_state = _vals / sum(_vals)  # _vals > 0 is garanteered.
 
         self.state_tran = np.random.uniform(
             size=(self.num_hidden_states, self.num_hidden_states)
         )
-        self.obs_prob = np.random.uniform(size=(self.num_hidden_states, self.D))
         for m in range(self.num_hidden_states):
             self.state_tran[m, :] = self.state_tran[m, :] / sum(self.state_tran[m, :])
+        assert np.allclose(self.state_tran.sum(axis=1), 1.0)
+        assert np.all(self.state_tran >= 0.0)
+        assert np.all(self.state_tran <= 1.0)
+        assert np.allclose(self.init_state.sum(), 1.0)
+        assert np.all(self.init_state >= 0.0)
+        assert np.all(self.init_state <= 1.0)
+        logger.debug(f"randomized state_tran=\n{self.state_tran}")
+        logger.debug(f"randomized init_state=\n{self.init_state}")
+        return
+
+    def randomize_observation_probabilities(self):
+        self.obs_prob = np.random.uniform(
+            size=(self.num_hidden_states, self.obs_prob.shape[1])
+        )
+        for m in range(self.num_hidden_states):
             self.obs_prob[m, :] = self.obs_prob[m, :] / sum(self.obs_prob[m, :])
+        assert np.allclose(self.obs_prob.sum(axis=1), 1.0)
+        assert np.all(self.obs_prob >= 0.0)
+        assert np.all(self.obs_prob <= 1.0)
+        logger.debug(f"randomized obs_prob=\n{self.obs_prob}")
+        return
 
     def viterbi_search(self, obss):
-        """Viterbi search of discrete simble HMM
+        """Viterbi search of discrete observation HMM. Likelihood is in log scale.
 
         - Finds the most-probable (Viterbi) path through the HMM states given observation.
         - Trellis (search space) is allocated in this method and release after the computation.
@@ -111,7 +128,7 @@ class HMM:
         # (2) Probability can be stored in log scale in advance.
         _log_obsprob = np.zeros((T, self.num_hidden_states))
         for t in range(T):
-            x_t = np.zeros(self.D)
+            x_t = np.zeros(self.obs_prob.shape[1])
             x_t[obss[t]] = 1.0
             for s in range(self.num_hidden_states):
                 _obs_prob = self.obs_prob[s, :]
@@ -139,7 +156,6 @@ class HMM:
                     + log(self.state_tran[:, j] + eps)
                     + _log_obsprob[t, j]
                 )
-                # print('probs=', _probs)
                 # calculate path from each s[t-1]. _probs is array
                 _trellis_bp[j, t] = _probs.argmax()
                 _trellis_prob[j, t] = _probs[_trellis_bp[j, t]]
@@ -196,9 +212,10 @@ class HMM:
             _type_: _description_
         """
         T = len(obss)
-        _log_obsprob = np.zeros((T, self.num_hidden_states))
+        _log_obsprob = np.zeros((T, self.num_hidden_states))  # log P(x[t]|s[t]=i)
         for t in range(T):
-            x_t = np.zeros(self._D)
+            # create one-hot vector for observation.
+            x_t = np.zeros(self.obs_prob.shape[1])
             x_t[obss[t]] = 1.0
             for s in range(self.num_hidden_states):
                 _log_obsprob[t, s] = np.dot(x_t, np.log(self.obs_prob[s, :]))
@@ -233,12 +250,12 @@ class HMM:
         _alpha[0, :] = _alpha[0, :] / _alpha_scale[0]
         for t in range(1, T):  # for each time step t = 1, ..., T-1
             for i in range(self.num_hidden_states):  # for each state s[t]=i
-                _alpha[t, i] = 0.0
-                for _i0 in range(self.num_hidden_states):
-                    _alpha[t, i] += (
-                        _alpha[t - 1, _i0] * self.state_tran[_i0, i] * obsprob[t, i]
-                    )
-                # _alpha[t,:] = (_alpha[t-1,:] @ self.state_tran) * _obsprob[t,:]
+                # _alpha[t, i] = 0.0
+                # for _i0 in range(self.num_hidden_states):
+                #    _alpha[t, i] += (
+                #        _alpha[t - 1, _i0] * self.state_tran[_i0, i] * obsprob[t, i]
+                #    )
+                _alpha[t, :] = (_alpha[t - 1, :] @ self.state_tran) * obsprob[t, :]
             _alpha_scale[t] = _alpha[t, :].sum()
             _alpha[t, :] = _alpha[t, :] / _alpha_scale[t]
             # P(s[t]=s | X[t]=x[t], S)
@@ -293,20 +310,18 @@ class HMM:
         # print(f'sum(gamma[t={T-1}])=', _g1[T-1,:].sum(), ' (last)')
         for t in range(T - 1, 0, -1):  # for each time step t = T-1, ..., 0
             # P(s[t-1],s[t]=s,X[t:T]=x[t:T])
-            for i in range(self.num_hidden_states):
-                _beta[t - 1, i] = 0.0
-                for _j in range(self.num_hidden_states):
-                    _beta[t - 1, i] += (
-                        self.state_tran[i, _j] * _obsprob[t, _j] * _beta[t, _j]
-                    )
-            # _b = (self.state_tran @ np.diag(_obsprob[t,:])) @ _beta[t,:]
+            # for i in range(self.num_hidden_states):
+            #    _beta[t - 1, i] = 0.0
+            #    for _j in range(self.num_hidden_states):
+            #        _beta[t - 1, i] += (
+            #            self.state_tran[i, _j] * _obsprob[t, _j] * _beta[t, _j]
+            #        )
+            _beta[t - 1, :] = self.state_tran @ (_obsprob[t, :] * _beta[t, :])
             _beta[t - 1, :] = _beta[t - 1, :] / _alpha_scale[t]
 
             # merge forward probability and backward probability
             _g1[t - 1, :] = _alpha[t - 1, :] * _beta[t - 1, :]
             assert (_g1[t - 1, :].sum() - 1.0) < 1.0e-9
-            # print(f'sum(gamma[t={t-1}])=', _g1[t-1,:].sum())
-            # print(f'gamma[t={t-1}]=', _g1[t-1,:])
             for i in range(self.num_hidden_states):
                 for j in range(self.num_hidden_states):  # transition s[t-1] to s[t]
                     _g2[t - 1, i, j] = (
@@ -340,8 +355,8 @@ class HMM:
         for t in range(T - 1):
             self._state_tran_stat = self._state_tran_stat + g2[t, :, :]
         for t in range(T):
-            # make observation vector.
-            o_t = np.zeros(self._D)
+            # make one-hot vector for observation
+            o_t = np.zeros(self.obs_prob.shape[1])
             o_t[obss[t]] = 1
             for _m in range(self.num_hidden_states):
                 self._obs_count[_m, :] = self._obs_count[_m, :] + g1[t, _m] * o_t
@@ -373,7 +388,9 @@ class HMM:
         self._state_tran_stat = np.zeros(
             (self.num_hidden_states, self.num_hidden_states)
         )
-        self._obs_count = np.zeros((self.num_hidden_states, self._D))
+        self._obs_count = np.zeros(
+            (self.num_hidden_states, self.obs_prob.shape[1])
+        )  # descrete observation
         self._training_count = 0
 
         tll = self._training_total_log_likelihood
@@ -453,7 +470,7 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit: int = 100) -> dict:
                     "state_tran": hmm.state_tran,
                     "obs_prob": hmm.obs_prob,
                     "n_state": hmm.num_hidden_states,
-                    "n_obs": hmm.D,
+                    "n_obs": hmm.obs_prob.shape[1],
                 }
                 pickle.dump(
                     {

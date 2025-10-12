@@ -182,13 +182,12 @@ def sampling_from_hmm(sequence_lengths, hmm: HMM):
         hmm (HMM): Hidden Markov Model instance
     """
     out = []
-    outdim_ids = hmm.D
     for _l in sequence_lengths:
         states = sample_markov_process(_l, hmm.init_state, hmm.state_tran)
         obs = []
         for s_t in states:
             # sample x from p(x|s[t])
-            x = np.random.choice(outdim_ids, p=hmm.obs_prob[s_t, :])
+            x = np.random.choice(hmm.obs_prob.shape[1], p=hmm.obs_prob[s_t, :])
             obs.append(x)
         out.append(obs)
     return states, out

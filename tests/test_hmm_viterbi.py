@@ -93,7 +93,8 @@ def test_viterbi_training():
     hmm.state_tran = np.array([[0.5, 0.5], [0.5, 0.5]])
     hmm.obs_prob = np.array([[0.5, 0.2, 0.2, 0.1, 0.0], [0.00, 0.1, 0.4, 0.4, 0.1]])
 
-    hmm.randomize_parameter()
+    hmm.randomize_state_transition_probabilities()
+    hmm.randomize_observation_probabilities()
     print(f"hmm={hmm}")
     hist = hmm_viterbi_training(hmm, training_data)
     print(f"hmm={hmm}")
@@ -115,9 +116,10 @@ def test_baum_welch():
     hmm = HMM(M, D)
     hmm.init_state = np.array([0.5, 0.5])
     hmm.state_tran = np.array([[0.9, 0.1], [0.5, 0.5]])
-    hmm.obs_prob = np.array([[0.5, 0.2, 0.2, 0.1, 0.0], [0.00, 0.1, 0.4, 0.4, 0.1]])
+    hmm.obs_prob = np.array([[0.5, 0.2, 0.2, 0.1, 0.0], [0.0, 0.1, 0.4, 0.4, 0.1]])
 
-    hmm.randomize_parameter()
+    hmm.randomize_state_transition_probabilities()
+    hmm.randomize_observation_probabilities()
     print(f"hmm={hmm}")
     hmm_baum_welch(hmm, training_data)
     print(f"hmm={hmm}")
