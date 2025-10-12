@@ -9,6 +9,7 @@ dependencies = [
     "streamlit",
     "numpy",
     "scikit-learn",
+    "tqdm>=4.67.1",
 ]
 
 [project.optional-dependencies]
