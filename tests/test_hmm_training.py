@@ -37,7 +37,7 @@ def test_forward_backward():
         [[0.4, 0.2, 0.20, 0.20], [0.20, 0.20, 0.4, 0.20], [0.25, 0.25, 0.25, 0.25]]
     )
     hmm_init = copy.deepcopy(hmm)
-    ll_history = hmm_baum_welch(hmm, obs_seqs, itr_limit=300)
+    ll_history = hmm_baum_welch(hmm, obs_seqs, itr_limit=100)
     print(hmm.state_tran)
     # print(ll_history)
     print("")
@@ -78,7 +78,3 @@ def test_forward_backward():
         ax.set_ylim([0, 1.0])
         ax.legend()
     fig.savefig("out_hmm_training_outprob_dist.png")
-
-
-if __name__ == "__main__":
-    test_forward_backward()

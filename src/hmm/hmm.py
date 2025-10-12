@@ -20,7 +20,7 @@ class HMM:
     """
 
     def __init__(self, M: int, D: int):
-        """Define HMM parameter.
+        """Define a Hidden Markov Model (HMM) parameter.
 
         Args:
             num_hidden_states (int): Number of hidden state
@@ -28,13 +28,15 @@ class HMM:
         """
         if M < 1:
             raise ValueError(f"num_hidden_states must be > 0. got {M}")
-        self._D = D
         self.init_state = np.array(
             [1 / M] * M
         )  # initial state probability Pr(s[t=0]==i)
         self.state_tran = np.ones((M, M)) * (
             1 / M
         )  # state transition probability, Pr(s[t+1]=j | s[t]=i)
+        if D < 1:
+            raise ValueError(f"D must be > 0. got {D}")
+        self._D = D
         self.obs_prob = np.zeros((M, D))  # state emission probability, Pr(y|s[t]=i)
         for m in range(M):
             self.obs_prob[m, :] = np.random.uniform(0, 1, D)
@@ -501,11 +503,28 @@ def pickle_hmm_and_data_by_dict(out_file: str, hmm: HMM, x: np.ndarray, st: np.n
         )
 
 
-def print_state_obs(x, st):
-    """Print observation and state sequence.
+def load_hmm_and_data_from_pickle(in_file: str):
+    """Load HMM model and data from pickle file.
     Args:
+        in_file (str): input file name
+    Returns:
+        hmm (HMM): HMM model
         x (np.ndarray): observation sequence
-        st (np.ndarray): state sequence
+        st (np.ndarray): latent state sequence
     """
-    for i, (_x, _s) in enumerate(zip(x, st)):
-        print(f"t={i} s={_s} x={_x}")
+    with open(in_file, "rb") as f:
+        data = pickle.load(f)
+        model_param = data.get("model_param", None)
+        if model_param is None:
+            raise ValueError(f"model_param not found in {in_file}")
+        n_state = model_param.get("n_state", None)
+        n_obs = model_param.get("n_obs", None)
+        if n_state is None or n_obs is None:
+            raise ValueError(f"n_state or n_obs not found in model_param of {in_file}")
+        hmm = HMM(n_state, n_obs)
+        hmm.init_state = model_param.get("init_state", hmm.init_state)
+        hmm.state_tran = model_param.get("state_tran", hmm.state_tran)
+        hmm.obs_prob = model_param.get("obs_prob", hmm.obs_prob)
+        x = data.get("sample", None)
+        st = data.get("latent", None)
+        return hmm, x, st

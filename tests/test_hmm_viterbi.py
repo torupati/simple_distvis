@@ -1,8 +1,9 @@
+# how to run:
 # PYTHONPATH=. uv run misc/demo_hmm.py
 
 import numpy as np
 
-from src.hmm.hmm import HMM, hmm_baum_welch, hmm_viterbi_training, print_state_obs
+from src.hmm.hmm import HMM, hmm_baum_welch, hmm_viterbi_training
 from src.hmm.sampler import sampling_from_hmm
 
 
@@ -20,16 +21,13 @@ def test_viterbi_search():
     hmm.obs_prob = np.array([[0.5, 0.5, 0.0, 0.0], [0.00, 0.00, 0.5, 0.5]])
     print(f"hmm={hmm}")
 
-    # observations = [0, 1, 2, 3, 2, 0, 2, 0]
+    # one sequence of length 10 is generated.
     st_orig, obs = sampling_from_hmm([10], hmm)
     print("observations({})={}".format(len(obs[0]), obs[0]))
     st, ll = hmm.viterbi_search(obs[0])
     print("st (", len(st), ")= ", st)
-    print_state_obs(obs[0], st)
-    print(st_orig)
-
-
-#    print( viterbi_path(priors, transmat, obslik, scaled=False, ret_loglik=True) )#=> (array([0, 1, 1, 1, 0]), -8.0120386579275227)
+    for i, (_x, _s) in enumerate(zip(obs[0], st)):
+        print(f"t={i} s={_s} s_true={st_orig[i]} x={_x}")
 
 
 def test_viterbi_search2():
@@ -51,10 +49,7 @@ def test_viterbi_search2():
     total_counts = 0
     for samp_idx in range(1):
         st_orig, obs = sampling_from_hmm([200], hmm)
-        # print("observations({})={}".format(len(obs), obs))
         st, ll = hmm.viterbi_search(obs[0])
-        # print('st (', len(st), ')= ', st )
-        # print_state_obs(obs, st)
         print("idx   org  est")
         for _i, (s0, s1, o) in enumerate(zip(st_orig, st, obs[0])):
             print(f"i={_i:03d} {s0}    {s1}  o={o}")
@@ -62,9 +57,6 @@ def test_viterbi_search2():
                 counts += 1
             total_counts += 1
         print(counts, total_counts)
-
-
-#    print( viterbi_path(priors, transmat, obslik, scaled=False, ret_loglik=True) )#=> (array([0, 1, 1, 1, 0]), -8.0120386579275227)
 
 
 def test_viterbi_search3():
@@ -129,19 +121,3 @@ def test_baum_welch():
     print(f"hmm={hmm}")
     hmm_baum_welch(hmm, training_data)
     print(f"hmm={hmm}")
-
-
-print("------ test_viterbi_training ------")
-test_viterbi_training()
-print("")
-
-print("------ test_viterbi_search ------")
-test_viterbi_search()
-print("")
-
-print("------ test_viterbi_search2 ------")
-test_viterbi_search2()
-print("")
-
-print("------ test_viterbi_search3 ------")
-test_viterbi_search3()

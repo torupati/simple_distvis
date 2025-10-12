@@ -94,9 +94,3 @@ def test_forward_backward():
     plot_gamma(axes[2], _gamma, state_labels)
 
     fig.savefig("test_gamma.png")
-
-
-#    st, ll = hmm.viterbi_search(obs)
-#    print('st (', len(st), ')= ', st )
-#    print_state_obs(obs, st)
-#    print(st_orig)
