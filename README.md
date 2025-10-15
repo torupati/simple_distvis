@@ -245,7 +245,7 @@ uv add sphinx sphinx-rtd-theme --dev
 mkdir docs && cd docs
 ```
 
-After editing conf.py, build
+After editing conf.py and index.rst, make API document and build html files.
 
 ```shell
 uv run sphinx-apidoc -o . ../src
