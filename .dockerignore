@@ -1,0 +1,38 @@
+# .dockerignore
+
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore git and logs
+.git/
+.gitignore
+*.log
+
+# Ignore local config files
+.vscode/
+*.swp
+
+# Ignore test outputs
+*.pytest_cache/
+htmlcov/
+.coverage
+
+# Ignore Streamlit secrets (if any)
+.streamlit/secrets.toml
+
+cloudbuild.yaml
+docker/
+README.md

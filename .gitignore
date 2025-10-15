@@ -8,3 +8,18 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Pre-commit　cache
+.pre-commit-cache/
+
+# Sphinx documentation build files
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Python-related (exclude)
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
