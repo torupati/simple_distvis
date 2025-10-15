@@ -233,6 +233,14 @@ check yaml...............................................................Passed
  7 files changed, 15 insertions(+), 7 deletions(-)
 ```
 
+New Developer can easily onboard.
+
+```shell
+git clone <repository>
+uv sync --dev
+uv run pre-commit install
+```
+
 ## Documentation
 
 Install sphinx

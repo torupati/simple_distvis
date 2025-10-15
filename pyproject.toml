@@ -46,6 +46,12 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py313"
+exclude = [
+    "*.yaml",
+    "*.yml",
+    "docs/_build/",
+    ".git/",
+]
 
 [tool.ruff.lint]
 select = [
