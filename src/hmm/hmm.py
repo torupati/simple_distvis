@@ -209,7 +209,7 @@ class HMM:
             obss (List[int]): observation sequence
 
         Returns:
-            _type_: _description_
+            np.ndarray: (T, M)-shape array, log observation probabilities
         """
         T = len(obss)
         _log_obsprob = np.zeros((T, self.num_hidden_states))  # log P(x[t]|s[t]=i)
@@ -398,18 +398,22 @@ class HMM:
         return tll
 
 
-def hmm_viterbi_training(hmm, obss_seqs):
+def hmm_viterbi_training(hmm, obss_seqs, itr_limit: int = 10) -> dict:
     """
     HMM training using Viterbi training algorithm.
 
     Args:
         hmm (HMM): HMM parameter
         obss_seqs (list[np.ndarray]): observation sequences
+        itr_limit (int): maximum iteration number
+
+    Returns:
+        dict: training history
     """
     itr_count = 0
     training_history = {"step": [], "log_likelihood": []}
     prev_likelihood = np.nan
-    while itr_count < 10:
+    while itr_count < itr_limit:
         for x in obss_seqs:
             g1, g2, ll = hmm.forward_viterbi(x)
             hmm.push_sufficient_statistics(x, g1, g2)
@@ -431,8 +435,11 @@ def hmm_baum_welch(hmm, obss_seqs, itr_limit: int = 100) -> dict:
     """HMM training using EM algorithm.
 
     Args:
-        hmm (_type_): _description_
-        obss_seqs (_type_): _description_
+        hmm (HMM): HMM parameter
+        obss_seqs (list[np.ndarray]): observation sequences
+        itr_limit (int): maximum iteration number
+    Returns:
+        dict: training history
     """
     itr_count = 0
     _save_model = True

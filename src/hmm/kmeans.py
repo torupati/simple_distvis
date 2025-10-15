@@ -244,7 +244,7 @@ class KmeansCluster:
         labels = np.argmax(r, axis=1)
         return labels
 
-    def PushSample(self, x: np.ndarray) -> (int, float):
+    def PushSample(self, x: np.ndarray) -> tuple[int, float]:
         """Push one training sample to inner training variables
 
         Args:
@@ -307,7 +307,7 @@ class KmeansCluster:
         """Reset inside statistics for training
 
         Raises:
-            Exception: invalid training setting
+            RuntimeError: invalid training setting
         """
         if self._trainable is False:
             raise RuntimeError("model is not set to training mode.")
