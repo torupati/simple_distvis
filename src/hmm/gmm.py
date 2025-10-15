@@ -101,7 +101,7 @@ class GaussianMixtureModel:
             lh = lh + np.log(wk)
         return lh
 
-    def update_e_step(self, x: ndarray) -> (np.ndarray, float):
+    def update_e_step(self, x: ndarray) -> tuple[np.ndarray, float]:
         """Calculate gamma of GMM (Expectation step of GMM training)
 
         Args:
