@@ -1,16 +1,12 @@
-import numpy as np
-import pytest
+"""Test configuration for the project."""
 
+import sys
+from pathlib import Path
 
-@pytest.fixture
-def sample_data():
-    """Sample 2D data for clustering"""
-    return np.random.randn(100, 2)
+# Add the pages directory to Python path for testing
+pages_dir = Path(__file__).parent.parent / "pages"
+sys.path.insert(0, str(pages_dir))
 
-
-@pytest.fixture
-def kmeans_instance():
-    """Instance of KmeansCluster"""
-    from src.hmm.kmeans import KmeansCluster
-
-    return KmeansCluster(4, 3)
+# Add the src directory to Python path for testing
+src_dir = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(src_dir))
