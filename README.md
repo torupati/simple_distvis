@@ -1,15 +1,15 @@
-# Machine Learning Algorith Demos
+# Simple Probabilistic Distribution Visualizer
 
-This is a web application and CUI tools to run machine learning algorithm such as k-means clustering, GMM training with EM algorithm, HMM training and infererings.
-Algorithms are implemented by author for studying.
+This is a sipmle web application to see probabilistic distribution.
 
 ## Get Started
 
 Install necessary libralies.
 
 ```terminal
-uv pip sync
-uv run pre-commit install
+uv venv
+source .venv/bin/activate
+uv sync
 ```
 
 If you have not installed uv, you can use this:
@@ -20,7 +20,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### Web application
 
-You can lanch the application.
+If you are in virtual environment of uv, you can lanch application.
+
+```bash
+streamlit run app.py
+```
+
+If not, 
 
 ```bash
 uv run streamlit run app.py
@@ -39,9 +45,9 @@ I am using WSL2, Ubuntu 24.02 and following messages are shown in terminal.
 PYTHONPATH=. uv run tools/sample_generator.py --help
 ```
 
-## Implementation Memo
+# Implementation Memo
 
-### Deploy to Google Cloud Platform
+## Deploy to Google Cloud Platform
 
 - Set your project. Create project if necessary.
 
@@ -95,7 +101,7 @@ gcloud run deploy streamlit-app \
 
 
 
-#### Cloudbuild
+### Cloudbuild
 
 - https://cloud.google.com/build/docs/securing-builds/configure-user-specified-service-accounts?hl=ja
 
@@ -135,7 +141,7 @@ gcloud iam service-accounts add-iam-policy-binding [target_service_account_email
 gcloud builds submit --config cloudbuild.yaml --service-account=projects/[PROJECT_ID]/serviceAccounts/[SERVICE_ACCOUNT_EMAIL]
 ```
 
-#### Stop Services
+### Stop Services
 
 You have a couple of options for disabling your Cloud Run services, which effectively stops any running instances. The primary method is to set the scaling of your service to zero instances. This allows existing requests to complete but prevents new ones from being processed.
 
@@ -144,7 +150,9 @@ You have a couple of options for disabling your Cloud Run services, which effect
 gcloud beta run services update SERVICE_NAME --scaling=0 --region=REGION_NAME --project=PROJECT_ID
 ```
 
-### Unit Test with Pytest
+## uv
+
+### Unit Test with Pytest in uv
 
 Add pytest in independencies.
 
@@ -211,7 +219,7 @@ You can execute format.
 uv run ruff format .
 ```
 
-## Pre-commit framework
+### Pre-commit framework
 
 1. Add precommit.  ```uv add pre-commit --dev```
 2. Edit  .pre-commit-config.yaml
@@ -241,7 +249,7 @@ uv sync --dev
 uv run pre-commit install
 ```
 
-## Documentation
+### Documentation
 
 Install sphinx
 

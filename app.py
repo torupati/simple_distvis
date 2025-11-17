@@ -6,7 +6,7 @@ logging.getLogger("watchdog").setLevel(logging.WARNING)
 
 st.set_page_config(page_title="App", page_icon="🌊")
 
-st.title("Welcome to App")
+st.title("Welcome to Simple Probabilistic Distribution Visualizer 🌊")
 st.write(
     """
     Use the sidebar to select a page.
