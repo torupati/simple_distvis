@@ -2,6 +2,7 @@
 
 統計・機械学習の基本概念を可視化するStreamlitアプリケーションです。
 
+
 ## 概要
 
 このプロジェクトは、統計学や機械学習の重要な概念を直感的に理解できるよう、インタラクティブな可視化ツールを提供します。
@@ -36,6 +37,12 @@ cd simple_distvis
 2. 依存関係をインストール
 ```bash
 uv install
+=======
+gcloud auth login
+gcloud projects create [YOUR_PROJECT_ID] --name="[PROJECT_NAME]"
+gcloud config set project [YOUR_PROJECT_ID]
+gcloud auth application-default set-quota-project [YOUR_PROJECT_ID]
+gcloud config set run/region asia-northeast1
 ```
 
 ## 使い方
@@ -57,14 +64,6 @@ uv run streamlit run app.py
 #### Sample Generator
 - 様々な確率分布からのサンプル生成
 - 分布の性質とサンプリングの関係を学習
-
-#### K-Means Clustering
-- K-Meansアルゴリズムによるクラスタリング
-- クラスター数の影響や初期化の重要性を理解
-
-#### Gaussian Mixture Model (GMM)
-- EMアルゴリズムによるGMMの学習過程
-- 混合分布の分解と最尤推定
 
 #### Markov Model
 - マルコフ連鎖の状態遷移
