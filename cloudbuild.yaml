@@ -1,31 +1,40 @@
 # cloudbuild.yaml
 
 options:
-  logging: CLOUD_LOGGING_ONLY # Change to CLOUD_LOGGING_ONLY if you want to avoid storing logs in GCS.
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
+
+substitutions:
+  _REGION: 'asia-northeast1'
+  _REPOSITORY_NAME: 'image-repository'
+  _IMAGE_NAME: 'streamlit-app'
+  _SERVICE_NAME: 'streamlit-app'
+  _PORT: '8501'
 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-f', 'docker/Dockerfile',
-      '-t', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app',
+      '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY_NAME}/${_IMAGE_NAME}',
       '.'
     ]
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
-      'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app'
+      '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY_NAME}/${_IMAGE_NAME}'
     ]
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       [
-        'run', 'deploy', 'st-app',
-        '--image', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app',
-        '--region', 'asia-northeast1',
+        'run', 'deploy', '${_SERVICE_NAME}',
+        '--image', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY_NAME}/${_IMAGE_NAME}',
+        '--region', '${_REGION}',
         '--platform', 'managed',
         '--allow-unauthenticated',
-        '--port', '8501'
+        '--port', '${_PORT}'
       ]
+
 images:
-  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/st-app'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY_NAME}/${_IMAGE_NAME}'
