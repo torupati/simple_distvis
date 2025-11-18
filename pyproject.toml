@@ -1,15 +1,14 @@
 [project]
-name = "kalman1d-velocity-motion"
+name = "Simple_Distribution_Visualizer"
 version = "0.1.0"
-description = "Add your description here"
+description = "Check out to see how statistical models work with simple visualizations."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "matplotlib>=3.10.6",
     "streamlit",
     "numpy",
-    "scikit-learn",
-    "tqdm>=4.67.1",
+    "scipy>=1.16.3",
 ]
 
 [project.optional-dependencies]
