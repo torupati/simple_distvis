@@ -11,9 +11,10 @@ st.write(
     """
     Use the sidebar to select a page.
     - **Gaussian 1D Posterior**: Explore Bayesian updating with Gaussian priors and likelihoods.
-    - **Beta Bayes**: Explore Beta-Binomial conjugate prior analysis.
-    - **Diffusion Process**: Visualize diffusion processes with animated Gaussian distributions.
-    - **Normal Distribution 1D**: Interactive exploration of normal distributions.
-    - **Square Error Decomposition**: Analyze bias-variance tradeoff in 1D and 2D.
+    - **Bernoulli-Beta Posterior**: Understand Bayesian updating with Bernoulli trials and Beta priors.
+    - **Poisson-Gamma Posterior**: Analyze Bayesian updating with Poisson data and Gamma priors.
+    - **Conjugate Priors**: Overview of conjugate prior relationships.
+    - **Bias and Variance**: bias-variance tradeoff visualization.
+
     """
 )

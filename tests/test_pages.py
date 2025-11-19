@@ -20,15 +20,6 @@ class TestPageImports:
         except ImportError as e:
             pytest.fail(f"Failed to import diffusion_process: {e}")
 
-    def test_beta_bayes_import(self):
-        """Test that beta_bayes.py can be imported."""
-        try:
-            import beta_bayes
-
-            assert hasattr(beta_bayes, "st")
-        except ImportError as e:
-            pytest.fail(f"Failed to import beta_bayes: {e}")
-
     def test_normal_distribution1d_import(self):
         """Test that normal_distribution1d.py can be imported."""
         try:
@@ -76,31 +67,6 @@ class TestPageImports:
             assert hasattr(square_error_decomposition_2d, "st")
         except ImportError as e:
             pytest.fail(f"Failed to import square_error_decomposition_2d: {e}")
-
-
-class TestNoHMMImports:
-    """Test that HMM-related imports are completely removed."""
-
-    def test_no_hmm_imports_in_pages(self):
-        """Ensure no pages try to import from src.hmm."""
-        import re
-        from pathlib import Path
-
-        pages_dir = Path(__file__).parent.parent / "pages"
-        hmm_import_pattern = re.compile(r"from\s+src\.hmm|import.*hmm|src\.hmm")
-
-        for page_file in pages_dir.glob("*.py"):
-            with open(page_file, "r", encoding="utf-8") as f:
-                content = f.read()
-                matches = hmm_import_pattern.findall(content)
-                assert not matches, f"Found HMM imports in {page_file.name}: {matches}"
-
-    def test_no_hmm_directory(self):
-        """Ensure src/hmm directory no longer exists."""
-        from pathlib import Path
-
-        hmm_dir = Path(__file__).parent.parent / "src" / "hmm"
-        assert not hmm_dir.exists(), "src/hmm directory should not exist"
 
 
 class TestProjectDependencies:

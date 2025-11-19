@@ -1,57 +1,43 @@
-# Simple Probabilistic Distribution Visualizer
+# Simple Distribution Visualization
 
-This is a sipmle web application to see probabilistic distribution.
+統計・機械学習の基本概念を可視化するStreamlitアプリケーションです。
 
-## Get Started
 
-Install necessary libralies.
+## 概要
 
-```terminal
-uv venv
-source .venv/bin/activate
-uv sync
-```
+このプロジェクトは、統計学や機械学習の重要な概念を直感的に理解できるよう、インタラクティブな可視化ツールを提供します。
 
-If you have not installed uv, you can use this:
+## 機能
 
+- **Gaussian 1D Posterior**: ベイズ更新による事後分布の可視化
+- **Sample Generator**: 様々な分布からのサンプル生成
+- **K-Means Clustering**: K-Meansクラスタリングの可視化
+- **Gaussian Mixture Model (GMM)**: EMアルゴリズムによるGMM学習
+- **Markov Model**: マルコフモデルの可視化
+- **Beta-Bayes**: ベータ分布を使ったベイズ推論
+- **Diffusion Process**: 拡散過程の可視化
+- **Normal Distribution 1D**: 正規分布の可視化
+- **Bias-Variance Tradeoff**: バイアス・バリアンス分解の可視化
+
+## インストール
+
+### 前提条件
+
+- Python 3.13以上
+- [uv](https://docs.astral.sh/uv/)パッケージマネージャー
+
+### セットアップ
+
+1. リポジトリをクローン
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+git clone https://github.com/torupati/simple_distvis.git
+cd simple_distvis
 ```
 
-### Web application
-
-If you are in virtual environment of uv, you can lanch application.
-
+2. 依存関係をインストール
 ```bash
-streamlit run app.py
-```
-
-If not, 
-
-```bash
-uv run streamlit run app.py
-```
-
-I am using WSL2, Ubuntu 24.02 and following messages are shown in terminal.
-
-> You can now view your Streamlit app in your browser.
->
->  Local URL: http://localhost:8501
->  Network URL: http://172.29.73.34:8501
-
-### Usage
-
-```
-PYTHONPATH=. uv run tools/sample_generator.py --help
-```
-
-# Implementation Memo
-
-## Deploy to Google Cloud Platform
-
-- Set your project. Create project if necessary.
-
-```bash
+uv install
+=======
 gcloud auth login
 gcloud projects create [YOUR_PROJECT_ID] --name="[PROJECT_NAME]"
 gcloud config set project [YOUR_PROJECT_ID]
@@ -59,211 +45,68 @@ gcloud auth application-default set-quota-project [YOUR_PROJECT_ID]
 gcloud config set run/region asia-northeast1
 ```
 
-- Check billing account and link the project
+## 使い方
 
-```shell
-gcloud beta billing accounts list
-gcloud beta billing projects link [YOUR_PROJECT_ID] --billing-account [BILLING_ACCOUNT_ID]
+### アプリケーションの起動
+
+```bash
+uv run streamlit run app.py
 ```
 
-- Create Artifact Registry
+ブラウザで `http://localhost:8501` にアクセスしてください。
 
-```shell
-gcloud artifacts repositories create my-repo --repository-format=docker --location=asia-northeast1
+### 各ページの説明
+
+#### Gaussian 1D Posterior
+- ガウス分布の事前分布と尤度関数から事後分布を計算
+- ベイズ推論の基本概念を理解
+
+#### Sample Generator
+- 様々な確率分布からのサンプル生成
+- 分布の性質とサンプリングの関係を学習
+
+#### Markov Model
+- マルコフ連鎖の状態遷移
+- 定常分布の収束過程
+
+#### Beta-Bayes
+- ベータ分布を共役事前分布とするベイズ推論
+- 逐次学習による分布の更新
+
+#### Bias-Variance Tradeoff
+- 機械学習におけるバイアス・バリアンス分解
+- モデルの複雑さと性能の関係
+
+## 開発
+
+### テストの実行
+
+```bash
+uv run pytest
 ```
 
-- Give Authentification to current account (e-mail accress) if necessary.
+### カバレッジの確認
 
-```shell
-gcloud projects add-iam-policy-binding [YOU_PROJECT_ID] \
-  --member="user:[CURRENT_ACCOUNT]" \
-  --role="roles/editor"
+```bash
+uv run pytest --cov=src
 ```
 
-- Build docker image and push.
+### 依存関係の管理
 
-```shell
-gcloud builds submit --tag asia-northeast1-docker.pkg.dev/[YOUR_PROJECT_ID]/my-repo/streamlit-app
+新しいパッケージを追加:
+```bash
+uv add <package_name>
 ```
 
-
-- Deploy
-
-```shell
-gcloud run deploy streamlit-app \
-  --image asia-northeast1-docker.pkg.dev/[YOUR_PROJECT_ID]/my-repo/streamlit-app \
-  --platform managed \
-  --port 8501 \
-  --allow-unauthenticated
+開発依存関係を追加:
+```bash
+uv add --group dev <package_name>
 ```
 
-- Build and deployment process are written in cloudbuild script.
+## ライセンス
 
+このプロジェクトは教育目的で作成されています。
 
+## 貢献
 
-### Cloudbuild
-
-- https://cloud.google.com/build/docs/securing-builds/configure-user-specified-service-accounts?hl=ja
-
-- Create a service account for cloudbuild.
-
-```shell
-gcloud iam service-accounts create cloud-build-sa --display-name="Cloud Build Service Account"
-```
-
-- Add roles to the service account.
-
-```
-gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
-  --member="serviceAccount:cloud-build-sa@[YOUR_PROJECT_ID].iam.gserviceaccount.com" \
-  --role="roles/cloudbuild.builds.builder"
-```
-
-- Also add roles of Cloud Run (deploy) and Artifact Registry (read/write).
-
-```shell
-gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
-  --member="serviceAccount:cloud-build-sa@[YOUR_PROJECT_ID].iam.gserviceaccount.com" \
-  --role="roles/artifactregistry.writer"
-gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
-  --member="serviceAccount:cloud-build-sa@[YOUR_PROJECT_ID].iam.gserviceaccount.com" \
-  --role="roles/run.admin"
-```
-
-```shell
-gcloud iam service-accounts add-iam-policy-binding [target_service_account_email] \
-  --member="serviceAccount:[service_account_email_granting_to_target]" \
-  --role="roles/iam.serviceAccountUser" \
-  --project=[YOUR_PROJECT_ID]
-```
-
-```shell
-gcloud builds submit --config cloudbuild.yaml --service-account=projects/[PROJECT_ID]/serviceAccounts/[SERVICE_ACCOUNT_EMAIL]
-```
-
-### Stop Services
-
-You have a couple of options for disabling your Cloud Run services, which effectively stops any running instances. The primary method is to set the scaling of your service to zero instances. This allows existing requests to complete but prevents new ones from being processed.
-
-
-```shell
-gcloud beta run services update SERVICE_NAME --scaling=0 --region=REGION_NAME --project=PROJECT_ID
-```
-
-## uv
-
-### Unit Test with Pytest in uv
-
-Add pytest in independencies.
-
-```shell
-uv add pytest --dev
-uv add pytest-cov --dev
-```
-
-Run unit tests.
-
-```shell
-# with coverage and detail output
-uv run pytest --cov=src -v
-
-# specific file
-uv run pytest tests/test_kmeans.py
-```
-
-
-```shell
-# To disable capture of stdout, --cpature=no or -s can be used.
-uv run pytest --cov -v --capture=no
-# show print statement or logging output
-uv run pytest --cov -v --capture=sys
-# show all
-uv run pytest --cov -v --tb=short -s
-```
-
-### Lint with RUFF
-
-You can easily install ruff.
-
-```shell
-uv add ruff --dev
-```
-
-Check, and fix it.
-
-```shell
-# check
-uv run ruff check .
-
-# fix
-uv run ruff check --fix .
-uv run ruff check --fix --unsafe-fixes .
-```
-
-**format**: You can check the format and get the list of unformatted files
-
-```shell
-uv run ruff format --check .
-```
-
-You can see which lines are in bad format of all files or a file.
-
-```shell
-uv run ruff format --diff .
-uv run ruff format --diff src/hmm/kmeans.py
-```
-
-You can execute format.
-
-```shell
-uv run ruff format .
-```
-
-### Pre-commit framework
-
-1. Add precommit.  ```uv add pre-commit --dev```
-2. Edit  .pre-commit-config.yaml
-3. Update to the latest version ```uv run pre-commit autoupdate```
-4. Test ```uv run pre-commit run --all-files```
-5. Install: ```uv run pre-commit install```
-
-Example of git commit.
-
-```
-$ git commit -m "configure pre-commit"
-ruff (legacy alias)..................................(no files to check)Skipped
-ruff format..........................................(no files to check)Skipped
-trim trailing whitespace.................................................Passed
-fix end of files.........................................................Passed
-check for merge conflicts................................................Passed
-check yaml...............................................................Passed
-[feature/20250831_stochastic_process 4817021] configure pre-commit
- 7 files changed, 15 insertions(+), 7 deletions(-)
-```
-
-New Developer can easily onboard.
-
-```shell
-git clone <repository>
-uv sync --dev
-uv run pre-commit install
-```
-
-### Documentation
-
-Install sphinx
-
-```shell
-uv add sphinx sphinx-rtd-theme --dev
-```
-
-```shell
-mkdir docs && cd docs
-```
-
-After editing conf.py and index.rst, make API document and build html files.
-
-```shell
-uv run sphinx-apidoc -o . ../src
-uv run sphinx-build -b html . _build/html
-```
+バグ報告や機能提案は[Issues](https://github.com/torupati/simple_distvis/issues)でお願いします。
