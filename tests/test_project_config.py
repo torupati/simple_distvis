@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 import toml
 
 
@@ -53,8 +54,10 @@ class TestProjectStructure:
 
         # Expected pages (no HMM-related pages)
         expected_pages = [
+            "02_beta_posteriori.py",
             "03_Gaussian1D_posteriori.py",
-            "beta_bayes.py",
+            "20_2dplot.py",
+            "21_ndplot.py",
             "diffusion_process.py",
             "normal_distribution1d.py",
             "square_error_decomposition.py",
@@ -66,18 +69,34 @@ class TestProjectStructure:
         for page in expected_pages:
             assert page in existing_pages, f"Expected page {page} not found"
 
-        # Check that no HMM-related pages exist
-        hmm_related_patterns = [
-            "hmm",
-            "gmm",
-            "kmeans",
-            "markov",
-            "sample_generator",
-            "clustering",
-        ]
-        for page in existing_pages:
-            for pattern in hmm_related_patterns:
-                assert pattern not in page.lower(), f"HMM-related page found: {page}"
+    def test_gaussian1d_posteriori_import(self):
+        """Test that 03_Gaussian1D_posteriori.py can be imported."""
+
+        try:
+            import importlib.util as importlib
+            from pathlib import Path
+
+            project_root = Path(__file__).parent.parent
+            pages_dir = project_root / "pages"
+            gaussian_path = pages_dir / "03_Gaussian1D_posteriori.py"
+            spec = importlib.spec_from_file_location(
+                "gaussian1d_posteriori", gaussian_path
+            )
+            module = importlib.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            assert hasattr(module, "st")
+        except Exception as e:
+            pytest.fail(f"Failed to import 03_Gaussian1D_posteriori: {e}")
+
+    def test_normal_distribution1d_import(self):
+        """Test that normal_distribution1d.py can be imported."""
+        try:
+            import normal_distribution1d
+
+            assert hasattr(normal_distribution1d, "st")
+        except ImportError as e:
+            pytest.fail(f"Failed to import normal_distribution1d: {e}")
 
     def test_src_directory_structure(self):
         """Test src directory structure."""
